@@ -42,7 +42,7 @@ https://facebook.github.io/react-native/docs/text-style-props
 https://facebook.github.io/react-native/docs/view-style-props
 */
 /*
-  Instead of trying to display a component, make a dropdown with options. User selects a preview for 
+  Instead of trying to display a component, make a dropdown with options. User selects a preview for
    - position
    - appearance
    - text
@@ -337,6 +337,61 @@ const STYLE_SECTIONS = [
 ];
 
 let defaultStringQuote = '"';
+/*
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+*/
+
+const isQuote = (str, index = 0) => '\'"`'.includes(str.charAt(index));
+
+const isBlockStart = (str, index = 0) => '({['.includes(str.charAt(index));
+
+const isCommentStart = (str, index = 0) =>
+  str.charAt(index) === '/' && '/*'.includes(str.charAt(index + 1));
+
+const isSkippable = (str, index = 0) => {
+  const char = str.charAt(index);
+
+  return '({[\'"`'.includes(char) || (char === '/' && '/*'.includes(str.charAt(index + 1)));
+};
+
+const findObjectStartingBrace = (str, cursorPos) => {
+  return str.substr(str, cursorPos + 1).lastIndexOf('{');
+};
+
+// ----------------- SKIP QUOTED STRING SECTION
 
 const isQuoteEscaped = (str, index) => {
   let count = 1;
@@ -360,6 +415,63 @@ const findStringEndQuoteIndex = (str, startQuotePos = 0) => {
   return lastIndex;
 };
 
+const skipQuotedString = (str, startIndex) => {
+  const lastIndex = findStringEndQuoteIndex(str, startIndex);
+
+  if (lastIndex < 0) {
+    throw new Error(
+      `Cannot find end quote "${str.charAt(startIndex)}" for string starting at ${startIndex}`,
+    );
+  }
+
+  return lastIndex + 1;
+};
+
+// ----------------- SKIP COMMENTS SECTION
+
+const SINGLELINE_COMMENT_RGX = /^(\/\/[^\n]*(?=\n))+/g;
+
+const skipSinglelineComment = (str, startIndex) => {
+  const [commentStr] = str.substr(startIndex).match(SINGLELINE_COMMENT_RGX) || [];
+
+  if (!commentStr) {
+    throw new Error(
+      `String identified as a singleline comment at ${startIndex} could not be parsed.`,
+    );
+  }
+
+  return startIndex + commentStr.length;
+};
+
+const MULTILINE_COMMENT_RGX = /^\/\*(?:.|\n)*?\*\//;
+
+const skipMultilineComment = (str, startIndex) => {
+  const [commentStr] = str.substr(startIndex).match(MULTILINE_COMMENT_RGX) || [];
+
+  if (!commentStr) {
+    throw new Error(
+      `String identified as a multiline comment at ${startIndex} could not be parsed.`,
+    );
+  }
+
+  return startIndex + commentStr.length;
+};
+
+const skipComment = (str, startIndex) => {
+  switch (str.charAt(startIndex + 1)) {
+    case '/':
+      return skipSinglelineComment(str, startIndex);
+    case '*':
+      return skipMultilineComment(str, startIndex);
+    default:
+      /*
+        This is not a comment, so we silently continue
+      */
+      return startIndex + 1;
+  }
+};
+
+// ----------------- SKIP BLOCKS SECTION
 const getSectionClosingBrace = (char) => {
   switch (char) {
     case '{':
@@ -368,94 +480,85 @@ const getSectionClosingBrace = (char) => {
       return ']';
     case '(':
       return ')';
-    case '<':
-      return '>';
     default:
       return undefined;
   }
-};
-
-const findObjectStartingBrace = (str, cursorPos) => {
-  return str.substr(str, cursorPos + 1).lastIndexOf('{');
 };
 
 const CLOSING_BRACE_RGX = {
   '{': /[{}"'`\/]/,
   '[': /[[\]"'`\/]/,
   '(': /[()"'`\/]/,
-  '<': /[<>"'`\/]/,
 };
 
-const findBraceBoundaryIndex = (str, index) => {
-  const brace = str.charAt(index);
-  const rgx = CLOSING_BRACE_RGX[brace];
-  const { length } = str;
-  1;
+const findBraceBoundaryLastIndex = (str, startIndex) => {
+  const endIndex = str.length - 1;
+  const openingBrace = str.charAt(startIndex);
+  const closingBrace = getSectionClosingBrace(openingBrace);
+
+  if (!closingBrace) {
+    throw new Error(`Could not identify section opening "${openingBrace}" at ${startIndex}`);
+  }
+
+  const rgx = CLOSING_BRACE_RGX[openingBrace];
   let depth = 1;
-  let lastIndex = index;
+  let lastIndex = startIndex + 1;
 
   do {
-    const chrIndex = str.substr(lastIndex + 1).search(rgx);
+    console.log('findBraceBoundaryLastIndex');
+    const charIndex = str.substr(lastIndex).search(rgx);
 
-    if (chrIndex < 0) {
-      return chrIndex;
+    if (charIndex < 0) {
+      throw new Error(
+        `Could not find closing brace "${closingBrace}" for a block starting at ${startIndex}`,
+      );
     }
 
-    lastIndex += chrIndex;
-    const chr = str.charAt(lastIndex);
+    lastIndex += charIndex;
+    const char = str.charAt(lastIndex);
 
-    switch (chr) {
-      case brace:
-        lastIndex = skipBlock(str, lastIndex);
-        break;
-      case '"':
-      case "'":
-      case '`':
-        lastIndex = findStringEndQuoteIndex(str, lastIndex);
-        break;
-      case '/':
-        lastIndex = skipComment(str, lastIndex);
-        break;
-      default:
-        return lastIndex;
+    if (isQuote(char)) {
+      lastIndex = skipQuotedString(str, lastIndex);
+    } else if (isCommentStart(str, lastIndex)) {
+      lastIndex = skipComment(str, lastIndex);
+    } else {
+      switch (char) {
+        case openingBrace:
+          depth += 1;
+          break;
+        case closingBrace:
+          depth -= 1;
+          break;
+        default:
+          throw new Error(`Unhandled char "${char}" found while skiping block at ${lastIndex}`);
+          break;
+      }
+
+      if (depth) {
+        lastIndex += 1;
+      }
     }
-  } while (depth > 0 && lastIndex < length);
+  } while (depth > 0 && lastIndex < endIndex);
 
   return lastIndex;
 };
 
-const SINGLELINE_COMMENT_RGX = /^(\s+\/\/[^\n]*(?=\n))+/g;
+const skipBlock = (str, openIndex) => {
+  const lastIndex = findBraceBoundaryLastIndex(str, openIndex);
 
-const findSinglelineCommentLastIndex = (str, startIndex) => {
-  const [commentStr] = str.substr(startIndex).match(SINGLELINE_COMMENT_RGX) || [];
-
-  if (!commentStr) {
-    throw new Error('String identified as a multiline comment could not be parsed.');
-  }
-
-  return startIndex + commentStr.length - 1;
+  return lastIndex + 1;
 };
 
-const MULTILINE_COMMENT_RGX = /^\s*\/\*(?:.|\n)*?\*\//;
-
-const findMultilineCommentLastIndex = (str, startIndex) => {
-  const [commentStr] = str.substr(startIndex).match(MULTILINE_COMMENT_RGX) || [];
-
-  if (!commentStr) {
-    throw new Error('String identified as a multiline comment could not be parsed.');
-  }
-
-  return startIndex + commentStr.length - 1;
-};
+// ----------------- GENERAL SKIP TO
 
 const REGEXPS = {};
 
 /*
-  We search for 
-  "{", "[", "(", "\"", "'", "`" - to skip blocks
+  We search for
+  "{", "[", "(", "\"", "'", "`" - to skip blocks, strings and comments
   "/" - to detect a start of a comment block, if not followed by "/" or "*", skip it
 */
-const getSkipRegExpFor = (chars) => {
+const getSkipBlockRegExpFor = (chars) => {
   let rgx = REGEXPS[chars];
   if (!rgx) {
     rgx = new RegExp(`[\\{\\[\\("'\`\\/${chars}]`);
@@ -466,64 +569,84 @@ const getSkipRegExpFor = (chars) => {
 };
 
 const skipToSymbol = (str, index, chars) => {
-  
+  const endIndex = str.length - 1;
+  let lastIndex = index;
+  const rgx = getSkipBlockRegExpFor(chars);
+
+  do {
+    console.log('skipToSymbol', index, lastIndex);
+
+    const searchIndex = str.substr(lastIndex).search(rgx);
+
+    if (searchIndex < 0) {
+      throw new Error(`Required symbols "${chars}" cannot be found after index ${lastIndex}.`);
+    }
+
+    lastIndex += searchIndex;
+
+    if (isSkippable(str, lastIndex)) {
+      if (isQuote(str, lastIndex)) {
+        // " ' `
+        lastIndex = skipQuotedString(str, lastIndex);
+      } else if (isBlockStart(str, lastIndex)) {
+        // { ( [
+        lastIndex = skipBlock(str, lastIndex);
+      } else if (isCommentStart(str, lastIndex)) {
+        // // /*
+        lastIndex = skipComment(str, lastIndex);
+      }
+
+      continue;
+    }
+
+    break;
+  } while (lastIndex < endIndex);
+
+  console.log('ends with ', lastIndex, str.charAt(lastIndex));
+  return lastIndex;
 };
 
 /*
-  We search for 
-  "{", "[", "(", "\"", "'", "`" - to skip blocks
-  "/" - to detect a start of a comment block, if not followed by "/" or "*", skip it
-  ":" - to detect boulds of a label part
-  "," - to detect end of block, possible not a label(spread?), skip to search next label
-  "}" - to detect bound of object
+  Label may end with
+  : - requires reading value coming after this symbol
+  , - label is also a reference to a variable with value
+  } - label is a reference and search is completed
 */
-const LABEL_SEARCH_SYMBOLS = /[\{\[\("'`\/:,\}]/;
+const LABEL_END_SEARCH_CHARS = ':,\\}';
+
+const skipToLabelEnd = (str, index) => skipToSymbol(str, index, LABEL_END_SEARCH_CHARS);
 
 /*
-  We search for same symbols as label, except don't look for ":" -- it can't be there
+  Value may end with
+  , - continue to next label
+  } - search is completed
 */
-const VALUE_SEARCH_SYMBOLS = /[\{\[\("'`\/,\}]/;
-
-const LABEL_END_SEARCH_CHARS = ':,\\}';
 const VALUE_END_SEARCH_CHARS = ',\\}';
 
-const findNextPunctuationIndex = (str, rgx, index) => {
-  const { length } = str;
-  let lastIndex = index;
+const skipToValueEnd = (str, index) => skipToSymbol(str, index, VALUE_END_SEARCH_CHARS);
 
-  do {
-    const chrIndex = str.substr(lastIndex + 1).search(rgx);
-
-    if (chrIndex < 0) {
-      return chrIndex;
-    }
-
-    lastIndex += chrIndex;
-    const chr = str.charAt(lastIndex);
-
-    switch (chr) {
-      case '[':
-      case '(':
-      case '{':
-      case '<':
-        lastIndex = skipBlock(str, lastIndex);
-        break;
-      case '"':
-      case "'":
-      case '`':
-        lastIndex = findStringEndQuoteIndex(str, lastIndex);
-        break;
-      case '/':
-        lastIndex = skipComment(str, lastIndex);
-        break;
-      default:
-        return lastIndex;
-    }
-  } while (lastIndex < length);
+const trimSpacesAndComments = (str) => {
+  /*
+  here property object is being generated by trimming spaces and
+  then comments with spaces from the string leaving meaningful value
+  trim spaces first
+  /^(\s*).*?(\s*)$/
+  then trim comments + spaces
+  ...
+  return {
+    preSpaces: '',
+    preComments: '',
+    value: '',
+    postComments: '',
+    postSpaces: '',
+  };
+*/
 };
 
 const parseStyleObject = (str, cursorIndex) => {
   const startIndex = findObjectStartingBrace(str, cursorIndex);
+  const endIndex = str.length - 1;
+  let properties = [];
 
   if (startIndex < 0) {
     // invalid
@@ -531,18 +654,45 @@ const parseStyleObject = (str, cursorIndex) => {
   }
 
   let lastIndex = startIndex + 1;
-  let lookupLabel = true;
-  let nextIndex;
-  let lastChar;
+  let char;
 
   do {
-    nextIndex = findNextPunctuationIndex(
-      str,
-      lookupLabel ? LABEL_SEARCH_SYMBOLS : VALUE_SEARCH_SYMBOLS,
-      lastIndex,
-    );
-    lastChar = str.charAt(nextIndex);
-    lastIndex = nextIndex + 1;
+    console.log('parseStyleObject next property');
+
+    nextIndex = skipToLabelEnd(str, lastIndex);
+    char = str.charAt(nextIndex);
+
+    /* FIXME
+      Spaces between last property and closing brace are co sidered a label currently, should be ignored
+    */
+    const property = { label: str.substring(lastIndex, nextIndex), value: null };
+
+    properties.push(property);
+
+    if (char === '}') {
+      // label without explicit value and end of search
+      lastIndex = nextIndex;
+      break;
+    } else {
+      lastIndex = nextIndex + 1;
+
+      if (char === ',') {
+        // label without explicit value
+        continue;
+      }
+    }
+
+    nextIndex = skipToValueEnd(str, lastIndex);
+
+    property.value = str.substring(lastIndex, nextIndex);
+
+    if (char === '}') {
+      // label without explicit value and end of search
+      lastIndex = nextIndex;
+      break;
+    } else {
+      lastIndex = nextIndex + 1;
+    }
 
     /* after retrieving label or value, cut comments from start and end
     {
@@ -550,7 +700,7 @@ const parseStyleObject = (str, cursorIndex) => {
       display /* post label * / : /* pre value * / "flex" // post value
       ,
     }
-    property object should be something like
+    resulting property object should be something like
     {
       label: {
         pre: "    // pre label",
@@ -564,7 +714,13 @@ const parseStyleObject = (str, cursorIndex) => {
       },
     }
     */
-  } while (lastChar !== '}' && lastIndex < str.length);
+  } while (char !== '}' && lastIndex < endIndex);
+
+  return {
+    startIndex,
+    properties,
+    endIndex: lastIndex,
+  };
 };
 
 const parsingTarget = `(
@@ -573,7 +729,7 @@ const parsingTarget = `(
       0: this.item.value,
       // float will be converted to a string
       0.25: 'quarter',
-      normal: \`${value}%\`,
+      normal: \`$\{value}%\`,
       postLabelComment
       // comment here
       : "text here",
@@ -588,6 +744,40 @@ const parsingTarget = `(
 )`;
 
 console.log(parseStyleObject(parsingTarget, 50));
+
+/*
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+*/
 
 const styles = StyleSheet.create({
   fullFlex: { flex: 1 },
