@@ -163,10 +163,10 @@ const APPEARANCE = [
   { name: 'borderColor', type: 'color' },
   { name: 'borderRadius', type: 'number' },
   { name: 'backgroundColor', type: 'color' },
-  { name: 'overflow', type: 'string', options: ['visible', 'hidden', 'scroll'] },
-  { name: 'display', type: 'string', options: ['none', 'flex'] },
+  { name: 'overflow', type: 'string', options: ['', 'visible', 'hidden', 'scroll'] },
+  { name: 'display', type: 'string', options: ['', 'none', 'flex'] },
   { name: 'opacity', type: 'number' },
-  { name: 'backfaceVisibility', type: 'string', options: ['visible', 'hidden'] },
+  { name: 'backfaceVisibility', type: 'string', options: ['', 'visible', 'hidden'] },
   { name: 'elevation', ...POSITIVE_INTEGER },
 ];
 
@@ -174,17 +174,17 @@ const FLEXBOX = [
   {
     name: 'alignContent',
     type: 'string',
-    options: ['flex-start', 'flex-end', 'center', 'stretch', 'space-between', 'space-around'],
+    options: ['', 'flex-start', 'flex-end', 'center', 'stretch', 'space-between', 'space-around'],
   },
   {
     name: 'alignItems',
     type: 'string',
-    options: ['flex-start', 'flex-end', 'center', 'stretch', 'baseline'],
+    options: ['', 'flex-start', 'flex-end', 'center', 'stretch', 'baseline'],
   },
   {
     name: 'alignSelf',
     type: 'string',
-    options: ['auto', 'flex-start', 'flex-end', 'center', 'stretch', 'baseline'],
+    options: ['', 'auto', 'flex-start', 'flex-end', 'center', 'stretch', 'baseline'],
   },
   { name: 'aspectRatio', type: 'number' },
   { name: 'flex', type: 'number' },
@@ -192,19 +192,19 @@ const FLEXBOX = [
   {
     name: 'flexDirection',
     type: 'string',
-    options: ['row', 'row-reverse', 'column', 'column-reverse'],
+    options: ['', 'row', 'row-reverse', 'column', 'column-reverse'],
   },
   { name: 'flexGrow', type: 'number' },
   { name: 'flexShrink', type: 'number' },
   {
     name: 'flexWrap',
     type: 'string',
-    options: ['wrap', 'nowrap'],
+    options: ['', 'wrap', 'nowrap'],
   },
   {
     name: 'justifyContent',
     type: 'string',
-    options: ['flex-start', 'flex-end', 'center', 'space-between', 'space-around', 'space-evenly'],
+    options: ['', 'flex-start', 'flex-end', 'center', 'space-between', 'space-around', 'space-evenly'],
   },
 ];
 
@@ -212,7 +212,7 @@ const POSITION = [
   {
     name: 'position',
     type: 'string',
-    options: ['absolute', 'relative'],
+    options: ['', 'absolute', 'relative'],
   },
   { name: 'zIndex', type: 'number' },
   { name: 'top', ...NUMBER_AND_PERCENT },
@@ -257,7 +257,7 @@ const BORDER = [
   { name: 'borderWidth', type: 'number' },
   { name: 'borderColor', type: 'color' },
   { name: 'borderRadius', type: 'number' },
-  { name: 'borderStyle', type: 'number', options: ['solid', 'dotted', 'dashed'] },
+  { name: 'borderStyle', type: 'number', options: ['', 'solid', 'dotted', 'dashed'] },
   { name: 'borderRightColor', type: 'color' },
   { name: 'borderBottomColor', type: 'color' },
   { name: 'borderBottomEndRadius', type: 'number' },
@@ -282,7 +282,7 @@ const IMAGE = [
   {
     name: 'resizeMode',
     type: 'string',
-    options: ['cover', 'contain', 'stretch', 'repeat', 'center'],
+    options: ['', 'cover', 'contain', 'stretch', 'repeat', 'center'],
   },
   { name: 'tintColor', type: 'color' },
   { name: 'overlayColor', type: 'color' },
@@ -291,22 +291,22 @@ const IMAGE = [
 const TEXT = [
   { name: 'color', type: 'color' },
   { name: 'fontSize', type: 'number' },
-  { name: 'fontStyle', type: 'string', options: ['normal', 'italic'] },
+  { name: 'fontStyle', type: 'string', options: ['', 'normal', 'italic'] },
   {
     name: 'fontWeight',
     type: 'string',
-    options: ['normal', 'bold', '100', '200', '300', '400', '500', '600', '700', '800', '900'],
+    options: ['', 'normal', 'bold', '100', '200', '300', '400', '500', '600', '700', '800', '900'],
   },
   { name: 'lineHeight', type: 'number' },
   {
     name: 'textAlign',
     type: 'string',
-    options: ['auto', 'left', 'right', 'center', 'justify'],
+    options: ['', 'auto', 'left', 'right', 'center', 'justify'],
   },
   {
     name: 'textDecorationLine',
     type: 'string',
-    options: ['none', 'underline', 'line-through', 'underline line-through'],
+    options: ['', 'none', 'underline', 'line-through', 'underline line-through'],
   },
   { name: 'textShadowColor', type: 'color' },
   { name: 'fontFamily', type: 'string' },
@@ -315,13 +315,13 @@ const TEXT = [
   {
     name: 'textAlignVertical',
     type: 'string',
-    options: ['auto', 'top', 'bottom', 'center'],
+    options: ['', 'auto', 'top', 'bottom', 'center'],
   },
   { name: 'letterSpacing', type: 'number' },
   {
     name: 'textTransform',
     type: 'string',
-    options: ['none', 'uppercase', 'lowercase', 'capitalize'],
+    options: ['', 'none', 'uppercase', 'lowercase', 'capitalize'],
   },
 ];
 
@@ -826,6 +826,7 @@ const StyleStringValue = ({ value, enabled, prop: { name, matcher }, onChange })
   </ShowEnabled>
 );
 
+// using keyboardType="decimal-pad" we cannot specify percents
 const StyleNumberValue = ({ value, enabled, prop: { name, matcher }, onChange }) => (
   <ShowEnabled value={value} enabled={enabled}>
     <TextInput
@@ -833,7 +834,6 @@ const StyleNumberValue = ({ value, enabled, prop: { name, matcher }, onChange })
       placeholder="Number"
       placeholderTextColor={TEXT_DISABLED_COLOR}
       onChangeText={(newValue) => onChange(name, newValue)}
-      keyboardType="decimal-pad"
       style={getStyle(value, matcher, styles.number)}
     />
   </ShowEnabled>
@@ -993,7 +993,13 @@ const validateSectionData = (section, values) => {
       data = [...props];
     } else {
       data = props.filter(({ name }) => {
-        const { value } = values[name];
+        const data = values[name];
+
+        if (!data) {
+          return false;
+        }
+
+        const { value } = data;
 
         return value !== '' && value !== undefined;
       });
