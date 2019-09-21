@@ -124,32 +124,39 @@ import {
 */
 const COLOR_PALETTE_TOOL_FILE_NAME = 'ColorPaletteTool.js';
 
+const NUMBER_RGX = /^-?(\d+(\.\d+)?|\.\d+|0x[\da-f]+)$/i;
+
+const NUMBER_TYPE = 'number';
+const STRING_TYPE = 'string';
+const COLOR_TYPE = 'color';
+const BOOL_TYPE = 'bool';
+
 const NUMBER_AND_PERCENT = {
-  type: 'number',
-  matcher: /^-?\d+(\.d+)?%?$/,
+  type: NUMBER_TYPE,
+  matcher: /^-?\d+(\.\d+)?%?$/,
   matchErrorMessage: 'Value should a number or percent value',
 };
 
 const NUMBER = {
-  type: 'number',
-  matcher: /^-?\d+(\.d+)?$/,
+  type: NUMBER_TYPE,
+  matcher: NUMBER_RGX,
   matchErrorMessage: 'Value should be a number',
 };
 
 const INTEGER = {
-  type: 'number',
+  type: NUMBER_TYPE,
   matcher: /^-?\d+$/,
   matchErrorMessage: 'Value should be an integer',
 };
 
 const COLOR = {
-  type: 'color',
-  matcher: /^0x(?:\d{2,2}|\d{4}|\d{6}|\d{8})$/,
+  type: COLOR_TYPE,
+  matcher: /^0x(?:[\da-f]{2}|[\da-f]{4}|[\da-f]{6}|[\da-f]{8})$/i,
   matchErrorMessage: 'Value should be a HEX color',
 };
 
 const POSITIVE_INTEGER = {
-  type: 'number',
+  type: NUMBER_TYPE,
   matcher: /^\d+$/,
   matchErrorMessage: 'Value should be a positive integer',
 };
@@ -159,62 +166,70 @@ const APPEARANCE = [
   { name: 'height', ...NUMBER_AND_PERCENT },
   { name: 'margin', ...NUMBER_AND_PERCENT },
   { name: 'padding', ...NUMBER_AND_PERCENT },
-  { name: 'borderWidth', type: 'number' },
-  { name: 'borderColor', type: 'color' },
-  { name: 'borderRadius', type: 'number' },
-  { name: 'backgroundColor', type: 'color' },
-  { name: 'overflow', type: 'string', options: ['', 'visible', 'hidden', 'scroll'] },
-  { name: 'display', type: 'string', options: ['', 'none', 'flex'] },
-  { name: 'opacity', type: 'number' },
-  { name: 'backfaceVisibility', type: 'string', options: ['', 'visible', 'hidden'] },
+  { name: 'borderWidth', ...NUMBER },
+  { name: 'borderColor', ...COLOR },
+  { name: 'borderRadius', ...NUMBER },
+  { name: 'backgroundColor', ...COLOR },
+  { name: 'overflow', type: STRING_TYPE, options: ['', 'visible', 'hidden', 'scroll'] },
+  { name: 'display', type: STRING_TYPE, options: ['', 'none', 'flex'] },
+  { name: 'opacity', ...NUMBER },
+  { name: 'backfaceVisibility', type: STRING_TYPE, options: ['', 'visible', 'hidden'] },
   { name: 'elevation', ...POSITIVE_INTEGER },
 ];
 
 const FLEXBOX = [
   {
     name: 'alignContent',
-    type: 'string',
+    type: STRING_TYPE,
     options: ['', 'flex-start', 'flex-end', 'center', 'stretch', 'space-between', 'space-around'],
   },
   {
     name: 'alignItems',
-    type: 'string',
+    type: STRING_TYPE,
     options: ['', 'flex-start', 'flex-end', 'center', 'stretch', 'baseline'],
   },
   {
     name: 'alignSelf',
-    type: 'string',
+    type: STRING_TYPE,
     options: ['', 'auto', 'flex-start', 'flex-end', 'center', 'stretch', 'baseline'],
   },
-  { name: 'aspectRatio', type: 'number' },
-  { name: 'flex', type: 'number' },
+  { name: 'aspectRatio', ...NUMBER },
+  { name: 'flex', ...NUMBER },
   { name: 'flexBasis', ...NUMBER_AND_PERCENT },
   {
     name: 'flexDirection',
-    type: 'string',
+    type: STRING_TYPE,
     options: ['', 'row', 'row-reverse', 'column', 'column-reverse'],
   },
-  { name: 'flexGrow', type: 'number' },
-  { name: 'flexShrink', type: 'number' },
+  { name: 'flexGrow', ...NUMBER },
+  { name: 'flexShrink', ...NUMBER },
   {
     name: 'flexWrap',
-    type: 'string',
+    type: STRING_TYPE,
     options: ['', 'wrap', 'nowrap'],
   },
   {
     name: 'justifyContent',
-    type: 'string',
-    options: ['', 'flex-start', 'flex-end', 'center', 'space-between', 'space-around', 'space-evenly'],
+    type: STRING_TYPE,
+    options: [
+      '',
+      'flex-start',
+      'flex-end',
+      'center',
+      'space-between',
+      'space-around',
+      'space-evenly',
+    ],
   },
 ];
 
 const POSITION = [
   {
     name: 'position',
-    type: 'string',
+    type: STRING_TYPE,
     options: ['', 'absolute', 'relative'],
   },
-  { name: 'zIndex', type: 'number' },
+  { name: 'zIndex', ...NUMBER },
   { name: 'top', ...NUMBER_AND_PERCENT },
   { name: 'right', ...NUMBER_AND_PERCENT },
   { name: 'bottom', ...NUMBER_AND_PERCENT },
@@ -254,73 +269,79 @@ const PADDING = [
 ];
 
 const BORDER = [
-  { name: 'borderWidth', type: 'number' },
-  { name: 'borderColor', type: 'color' },
-  { name: 'borderRadius', type: 'number' },
-  { name: 'borderStyle', type: 'number', options: ['', 'solid', 'dotted', 'dashed'] },
-  { name: 'borderRightColor', type: 'color' },
-  { name: 'borderBottomColor', type: 'color' },
-  { name: 'borderBottomEndRadius', type: 'number' },
-  { name: 'borderBottomLeftRadius', type: 'number' },
-  { name: 'borderBottomRightRadius', type: 'number' },
-  { name: 'borderBottomStartRadius', type: 'number' },
-  { name: 'borderBottomWidth', type: 'number' },
-  { name: 'borderEndColor', type: 'color' },
-  { name: 'borderLeftColor', type: 'color' },
-  { name: 'borderLeftWidth', type: 'number' },
-  { name: 'borderRightWidth', type: 'number' },
-  { name: 'borderStartColor', type: 'color' },
-  { name: 'borderTopColor', type: 'color' },
-  { name: 'borderTopEndRadius', type: 'number' },
-  { name: 'borderTopLeftRadius', type: 'number' },
-  { name: 'borderTopRightRadius', type: 'number' },
-  { name: 'borderTopStartRadius', type: 'number' },
-  { name: 'borderTopWidth', type: 'number' },
+  { name: 'borderWidth', ...NUMBER },
+  { name: 'borderColor', ...COLOR },
+  { name: 'borderRadius', ...NUMBER },
+  {
+    name: 'borderStyle',
+    type: NUMBER_TYPE,
+    matcher: /^(-?\d+(\.\d+)?|-?\.\d+|solid|dotted|dashed)$/,
+    matchErrorMessage: 'Vaue must be a number or one of solid, dotted or dashed',
+    options: ['', 'solid', 'dotted', 'dashed'],
+  },
+  { name: 'borderRightColor', ...COLOR },
+  { name: 'borderBottomColor', ...COLOR },
+  { name: 'borderBottomEndRadius', ...NUMBER },
+  { name: 'borderBottomLeftRadius', ...NUMBER },
+  { name: 'borderBottomRightRadius', ...NUMBER },
+  { name: 'borderBottomStartRadius', ...NUMBER },
+  { name: 'borderBottomWidth', ...NUMBER },
+  { name: 'borderEndColor', ...COLOR },
+  { name: 'borderLeftColor', ...COLOR },
+  { name: 'borderLeftWidth', ...NUMBER },
+  { name: 'borderRightWidth', ...NUMBER },
+  { name: 'borderStartColor', ...COLOR },
+  { name: 'borderTopColor', ...COLOR },
+  { name: 'borderTopEndRadius', ...NUMBER },
+  { name: 'borderTopLeftRadius', ...NUMBER },
+  { name: 'borderTopRightRadius', ...NUMBER },
+  { name: 'borderTopStartRadius', ...NUMBER },
+  { name: 'borderTopWidth', ...NUMBER },
 ];
 
 const IMAGE = [
   {
     name: 'resizeMode',
-    type: 'string',
+    type: STRING_TYPE,
     options: ['', 'cover', 'contain', 'stretch', 'repeat', 'center'],
   },
-  { name: 'tintColor', type: 'color' },
-  { name: 'overlayColor', type: 'color' },
+  { name: 'tintColor', ...COLOR },
+  { name: 'overlayColor', ...COLOR },
 ];
 
 const TEXT = [
-  { name: 'color', type: 'color' },
-  { name: 'fontSize', type: 'number' },
-  { name: 'fontStyle', type: 'string', options: ['', 'normal', 'italic'] },
+  { name: COLOR_TYPE, ...COLOR },
+  { name: 'fontSize', ...NUMBER },
+  { name: 'fontStyle', type: STRING_TYPE, options: ['', 'normal', 'italic'] },
   {
     name: 'fontWeight',
-    type: 'string',
+    type: STRING_TYPE,
     options: ['', 'normal', 'bold', '100', '200', '300', '400', '500', '600', '700', '800', '900'],
   },
-  { name: 'lineHeight', type: 'number' },
+  { name: 'lineHeight', ...NUMBER },
   {
     name: 'textAlign',
-    type: 'string',
+    type: STRING_TYPE,
     options: ['', 'auto', 'left', 'right', 'center', 'justify'],
   },
   {
     name: 'textDecorationLine',
-    type: 'string',
+    type: STRING_TYPE,
     options: ['', 'none', 'underline', 'line-through', 'underline line-through'],
   },
-  { name: 'textShadowColor', type: 'color' },
-  { name: 'fontFamily', type: 'string' },
-  { name: 'textShadowRadius', type: 'number' },
-  { name: 'includeFontPadding', type: 'bool' },
+  { name: 'textShadowColor', ...COLOR },
+  { name: 'fontFamily', type: STRING_TYPE },
+  { name: 'textShadowRadius', ...NUMBER },
+  { name: 'includeFontPadding', type: BOOL_TYPE },
   {
     name: 'textAlignVertical',
-    type: 'string',
+    type: STRING_TYPE,
     options: ['', 'auto', 'top', 'bottom', 'center'],
   },
-  { name: 'letterSpacing', type: 'number' },
+  { name: 'letterSpacing', ...NUMBER },
   {
     name: 'textTransform',
-    type: 'string',
+    type: STRING_TYPE,
     options: ['', 'none', 'uppercase', 'lowercase', 'capitalize'],
   },
 ];
@@ -759,6 +780,29 @@ const parseStyleObject = (str, cursorIndex) => {
   };
 };
 
+/*
+
+  ---------------------------- GENERATING OBJECT STRING SECTION
+
+*/
+
+const stringQuoteWrap = (str) => `${defaultStringQuote}${str}${defaultStringQuote}`;
+
+const stringifyValue = (name, value) => {
+  const { type } = STYLE_PROP_MAP[name];
+
+  switch (type) {
+    case NUMBER_TYPE:
+    case COLOR_TYPE:
+      return NUMBER_RGX.test(value) ? value : stringQuoteWrap(value);
+    case BOOL_TYPE:
+      return value;
+    case STRING_TYPE:
+    default:
+      return stringQuoteWrap(value);
+  }
+};
+
 const combileStyleObjectPart = ({ str, preSpaces, preComments, value, postComments, postSpaces }) =>
   `${preSpaces}${preComments}${value}${postSpaces}${postComments}`;
 
@@ -774,6 +818,75 @@ const combileStyleObject = (properties) =>
 
     return result;
   }, '');
+
+/*
+  Here is the final step of te tool session, so we don't care about keeping data unchanged, 
+  it will be gone anyway and you can't save it. Don't even try, it's a dead weight, move on.
+*/
+const buildPropertiesString = (styles, list) => {
+  const values = { ...styles };
+  let etalon;
+  let str = combileStyleObject(
+    list
+      .filter((item) => {
+        const {
+          label: { value: name },
+        } = item;
+        const prop = values[name];
+
+        if (isStyleProp(name)) {
+          etalon = item;
+          return !prop || !prop.enabled || !!prop.value;
+        }
+
+        return true;
+      })
+      .map((item) => {
+        const {
+          label: { value: name },
+          value,
+        } = item;
+        const prop = values[name];
+
+        // we delete nothing or prop, we don't know and don't need to
+        delete values[name];
+
+        if (!isStyleProp(name) || !prop || !prop.changed || !prop.enabled) {
+          return item;
+        }
+
+        return {
+          ...item,
+          value: {
+            ...value,
+            value: stringifyValue(name, prop.value),
+          },
+        };
+      }),
+  );
+
+  if (!etalon) {
+    etalon = {
+      label: { preSpaces: ' ', postSpaces: '' },
+      value: { preSpaces: ' ', postSpaces: '' },
+    };
+  } else if (!etalon.value) {
+    // because value can be null
+    etalon.value = { preSpaces: ' ', postSpaces: '' };
+  }
+
+  console.log(list, etalon);
+
+  return Object.keys(values).reduce((result, name) => {
+    const {
+      label: { preSpaces: preLabel, postSpaces: postLabel },
+      value: { preSpaces: preValue, postSpaces: postValue },
+    } = etalon;
+    const value = stringifyValue(name, values[name].value);
+
+    return `${result}${preLabel}${name}${postLabel}:${preValue}${value}${postValue},`;
+  }, str);
+};
 
 /*
 
@@ -950,16 +1063,16 @@ const renderPropValue = (value, enabled, prop, onChange) => {
     ValueComponent = StyleEnumValue;
   } else {
     switch (type) {
-      case 'number':
+      case NUMBER_TYPE:
         ValueComponent = StyleNumberValue;
         break;
-      case 'color':
+      case COLOR_TYPE:
         ValueComponent = StyleColorValue;
         break;
-      case 'bool':
+      case BOOL_TYPE:
         ValueComponent = StyleBoolValue;
         break;
-      case 'string':
+      case STRING_TYPE:
       default:
         ValueComponent = StyleStringValue;
         break;
@@ -1039,6 +1152,7 @@ export class StyleComposerToolView extends Component {
           ...values,
           [name]: {
             ...prevData,
+            changed: true,
             value,
           },
         },
@@ -1133,10 +1247,12 @@ export class StyleComposerToolView extends Component {
         expanded={expanded}
         onPress={() => this.toggleSectionExpanded(section)}
       >
-        <CheckBoxButton
-          selected={undefinedVisible}
-          onPress={() => this.toggleUndefinedVisible(section)}
-        />
+        {expanded ? (
+          <CheckBoxButton
+            selected={undefinedVisible}
+            onPress={() => this.toggleUndefinedVisible(section)}
+          />
+        ) : null}
       </SectionButton>
     );
   };
@@ -1283,6 +1399,7 @@ const getValidStyleProps = ({ properties }) =>
       ...result,
       [label.value]: {
         value: styleValue,
+        changed: false,
         enabled,
       },
     };
@@ -1326,14 +1443,15 @@ const tool = {
         endIndex,
         properties,
         styles,
-      } = await loadTargetObject(editorApi);
+      } = await loadStyleObjectProps(editorApi);
 
       showModal({
         renderer: styleComposerToolScreenRenderer,
         props: {
           values: styles,
-          onSubmit: async (value) => {
-            const code = `${content.substring(0, startIndex)}${value}${content.substring(
+          onSubmit: async (newStyles) => {
+            const stylesString = buildPropertiesString(newStyles, properties);
+            const code = `${content.substring(0, startIndex)}${stylesString}${content.substring(
               endIndex,
             )}`;
 
