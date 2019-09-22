@@ -58,6 +58,13 @@ https://facebook.github.io/react-native/docs/view-style-props
    - original component
   which will try to render original component
 */
+/*
+  Add a longpress hanler which will allow to create and paste new styles object into desired place.
+*/
+/*
+  Remembering styles is very good idea, should exclude disabled values and should label styles with non-unique strings.
+  It may be used or applied to many tools, so must be included with playground and available as API or importable package.
+*/
 
 import React, { Component, memo, useCallback, useMemo, useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
@@ -1124,7 +1131,7 @@ const validateSectionData = (section, values) => {
   return { ...section, data };
 };
 
-export class StyleComposerToolView extends Component {
+class StyleComposerToolView extends Component {
   constructor(props) {
     super(props);
 
@@ -1367,7 +1374,7 @@ const StyleComposerToolModal = withHostedModal(
   ModalScreen,
 );
 
-export const { renderer: styleComposerToolScreenRenderer } = StyleComposerToolModal;
+const { renderer: styleComposerToolScreenRenderer } = StyleComposerToolModal;
 
 const isStyleProp = (prop) => {
   const { [prop]: obj } = STYLE_PROP_MAP;
