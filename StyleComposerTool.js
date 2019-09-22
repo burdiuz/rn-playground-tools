@@ -66,61 +66,30 @@ https://facebook.github.io/react-native/docs/view-style-props
   It may be used or applied to many tools, so must be included with playground and available as API or importable package.
 */
 
-import React, { Component, memo, useCallback, useMemo, useState, useEffect } from 'react';
+import React, { Component, memo, useMemo } from 'react';
 import PropTypes from 'prop-types';
-import {
-  View,
-  StyleSheet,
-  FlatList,
-  SectionList,
-  Clipboard,
-  ScrollView,
-  TouchableHighlight,
-} from 'react-native';
+import { View, StyleSheet, FlatList, SectionList } from 'react-native';
 import { connect } from 'react-redux';
-import AsyncStorage from '@react-native-community/async-storage';
-import AntDesign from 'react-native-vector-icons/AntDesign';
-import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import TransparentIconButton from 'source/components/TransparentIconButton';
 import BasicIconButton from 'source/buttons/BasicIconButton';
 import { showModal } from 'source/store/modals/actions';
 import { getToolByFileName } from 'source/store/file/tools/selectors';
 
 import {
-  Screen,
   ModalScreen,
-  Area,
-  HSlider,
-  VSlider,
-  HRule,
-  VGroup,
   HGroup,
   SBGroup,
   Section,
   TextInput,
-  TextArea,
-  LinkButton,
   TextButton,
   IconButton,
   SectionButton,
   CheckBoxButton,
-  SmallHeader,
-  SlimHeader,
   SmallHeaderText,
   DropDown,
-  TEXT_COLOR,
-  TEXT_ACTIVE_COLOR,
   TEXT_DISABLED_COLOR,
-  LIGHT_BORDER_COLOR,
-  DARK_BORDER_COLOR,
   withHostedModal,
-  bigModalDefaultStyle,
-  TransparencyBackground,
-  withInputLabel,
-  TabView,
   Text,
-  Small,
   ActiveText,
   DisabledText,
 } from '@actualwave/react-native-kingnare-style';
@@ -702,16 +671,17 @@ const trimSpacesAndComments = (str) => {
 };
 
 const parseStyleObject = (str, cursorIndex) => {
-  const startIndex = findObjectStartingBrace(str, cursorIndex);
+  const openingBraceIndex = findObjectStartingBrace(str, cursorIndex);
+  const startIndex = openingBraceIndex + 1;
   const endIndex = str.length - 1;
   let properties = [];
 
-  if (startIndex < 0) {
+  if (openingBraceIndex < 0) {
     // invalid
     return null;
   }
 
-  let lastIndex = startIndex + 1;
+  let lastIndex = startIndex;
   let char;
 
   do {
@@ -833,6 +803,11 @@ const combileStyleObject = (properties) =>
 const buildPropertiesString = (styles, list) => {
   const values = { ...styles };
   let etalon;
+  /* TODO 
+    Last existing property in postSpaces has all the space between property and closing brace. 
+    It is not right and this space should be moved to be after last added property.
+
+  */
   let str = combileStyleObject(
     list
       .filter((item) => {
@@ -918,6 +893,11 @@ const styles = StyleSheet.create({
   error: {
     borderColor: 0xff0000ff,
   },
+  icon: { fontSize: 20 },
+  nostyles: { margin: 10, textAlign: 'center' },
+  mv10: { marginVertical: 10 },
+  mh10: { marginHorizontal: 10 },
+  mt5: { marginTop: 5 },
 });
 
 const getStyle = (value, matcher, style) => {
@@ -1103,7 +1083,7 @@ const StylePropRow = memo(
   ({ value: a }, { value: b }) => a === b,
 );
 
-const NoStyleProps = () => <Text style={{ margin: 10, textAlign: 'center' }}>...</Text>;
+const NoStyleProps = () => <Text style={styles.nostyles}>...</Text>;
 
 const validateSectionData = (section, values) => {
   const { expanded, undefinedVisible, props } = section;
@@ -1332,7 +1312,7 @@ class StyleComposerToolView extends Component {
 
     return (
       <>
-        <SBGroup style={{ marginVertical: 10 }}>
+        <SBGroup style={styles.mv10}>
           <SmallHeaderText>Style Composer</SmallHeaderText>
           <HGroup noPadding>
             <BasicIconButton
@@ -1344,7 +1324,7 @@ class StyleComposerToolView extends Component {
             <BasicIconButton
               iconClass={MaterialCommunityIcons}
               icon="expand-all"
-              style={{ marginHorizontal: 10 }}
+              style={styles.mh10}
               onPress={this.handleCollapseAll}
               disabled={!sectionsEnabled}
             />
@@ -1357,7 +1337,7 @@ class StyleComposerToolView extends Component {
           </HGroup>
         </SBGroup>
         {this.renderList()}
-        <SBGroup style={{ marginTop: 5 }}>
+        <SBGroup style={styles.mt5}>
           <TextButton label="Cancel" onPress={close} />
           <TextButton label="Update" onPress={this.handleUpdate} />
         </SBGroup>
@@ -1416,23 +1396,27 @@ const loadStyleObjectProps = async (editorApi) => {
   const content = await editorApi.getValue();
   const { index: position } = (await editorApi.getCursor()) || {};
 
-  const object = parseStyleObject(content, position);
-  const styles = getValidStyleProps(object);
+  try {
+    const object = parseStyleObject(content, position);
+    const styles = getValidStyleProps(object);
 
-  return {
-    ...object,
-    styles,
-    position,
-    content,
-  };
+    return {
+      ...object,
+      styles,
+      position,
+      content,
+    };
+  } catch (error) {
+    throw new Error(
+      'Could not read object properties. Please, place cursor into the styles object(between "{" and "}") and try again.',
+    );
+  }
 };
 
 const tool = {
   type: 'editor',
   mimeType: ['application/javascript'],
-  iconRenderer: () => (
-    <MaterialCommunityIcons name="playlist-edit" color={TEXT_ACTIVE_COLOR} size={28} />
-  ),
+  iconRenderer: () => <ActiveText style={styles.icon}>{`{ : }`}</ActiveText>,
   pressHandler: async ({
     closeToolsPanel,
     showModal,
