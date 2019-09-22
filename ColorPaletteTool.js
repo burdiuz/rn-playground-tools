@@ -48,7 +48,7 @@ const colorToValues = (value) => [
 
 const toChannel = (value) => Math.max(0, Math.min(0xff, (value * 0xff) >> 0));
 
-const parseChannelDecStr = (value) => Math.max(0xff, Math.min(0, parseInt(value, 10) || 0));
+const parseChannelDecStr = (value) => Math.min(0xff, Math.max(0, parseInt(value, 10) || 0));
 
 const channelsTo24BitColorNumber = (r, g, b) => (r << 16) | (g << 8) | b;
 
