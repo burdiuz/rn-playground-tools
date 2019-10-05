@@ -27,9 +27,7 @@ const styles = StyleSheet.create({
   rowWrap: { flexDirection: 'row', flexWrap: 'wrap' },
 });
 
-const ColorPaletteScreen = ({ close, pasteIntoCode, copyToClipboard }) => {
-  return <Screen />;
-};
+const ColorPaletteScreen = ({ close, pasteIntoCode, copyToClipboard }) => <Screen />;
 
 const CreateProjectModal = withHostedModal(
   ColorPaletteScreen,

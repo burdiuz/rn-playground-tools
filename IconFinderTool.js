@@ -31,8 +31,8 @@ const FONTS = [
   { label: 'EvilIcons', value: () => require('react-native-vector-icons/EvilIcons') },
   { label: 'Feather', value: () => require('react-native-vector-icons/Feather') },
   { label: 'FontAwesome', value: () => require('react-native-vector-icons/FontAwesome') },
-  { label: 'FontAwesome5', value: () => require('react-native-vector-icons/FontAwesome5') },
-  { label: 'FontAwesome5Pro', value: () => require('react-native-vector-icons/FontAwesome5Pro') },
+// { label: 'FontAwesome5', value: () => require('react-native-vector-icons/FontAwesome5') },
+// { label: 'FontAwesome5Pro', value: () => require('react-native-vector-icons/FontAwesome5Pro') },
   { label: 'Fontisto', value: () => require('react-native-vector-icons/Fontisto') },
   { label: 'Foundation', value: () => require('react-native-vector-icons/Foundation') },
   { label: 'Ionicons', value: () => require('react-native-vector-icons/Ionicons') },
@@ -95,7 +95,11 @@ const renderPreview = (Font, name, type, zoom) => {
           backgroundColor={BUTTON_COLOR}
           onPress={() => null}
         >
-          <Text>{name} Button</Text>
+          <Text>
+            {name}
+            {' '}
+Button
+          </Text>
         </Font.Button>
       );
   }
@@ -185,7 +189,10 @@ const GenerateCodeView = ({
   return (
     <>
       <SmallHeader>
-        {fontFamily} / {name}
+        {fontFamily}
+        {' '}
+/
+        {name}
       </SmallHeader>
       <HGroup noHorizontalPadding style={{ alignSelf: 'stretch' }}>
         <Font
@@ -269,39 +276,33 @@ const GenerateCodeView = ({
   );
 };
 
-const GlyphListItem = ({ Font, name, index, onPress }) => {
-  return (
-    <TouchableHighlight onPress={onPress}>
-      <View style={index % 2 ? styles.glyphListItemOdd : styles.glyphListItemEven}>
-        <Font name={name} color={TEXT_ACTIVE_COLOR} size={30} />
-        <Text style={styles.glyphListItemText}>{name}</Text>
-      </View>
-    </TouchableHighlight>
-  );
-};
+const GlyphListItem = ({ Font, name, index, onPress }) => (
+  <TouchableHighlight onPress={onPress}>
+    <View style={index % 2 ? styles.glyphListItemOdd : styles.glyphListItemEven}>
+      <Font name={name} color={TEXT_ACTIVE_COLOR} size={30} />
+      <Text style={styles.glyphListItemText}>{name}</Text>
+    </View>
+  </TouchableHighlight>
+);
 
-const renderGlyphListItem = (Font, onSelected) => ({ item, index }) => {
-  return (
-    <GlyphListItem
-      key={item}
-      Font={Font}
-      name={item}
-      index={index}
-      onPress={() => onSelected(item, Font)}
-    />
-  );
-};
+const renderGlyphListItem = (Font, onSelected) => ({ item, index }) => (
+  <GlyphListItem
+    key={item}
+    Font={Font}
+    name={item}
+    index={index}
+    onPress={() => onSelected(item, Font)}
+  />
+);
 
-const GlyphsList = forwardRef(({ Font, list, onSelected }, ref) => {
-  return (
-    <FlatList
-      ref={ref}
-      data={list}
-      keyExtractor={(name) => name}
-      renderItem={renderGlyphListItem(Font, onSelected)}
-    />
-  );
-});
+const GlyphsList = forwardRef(({ Font, list, onSelected }, ref) => (
+  <FlatList
+    ref={ref}
+    data={list}
+    keyExtractor={(name) => name}
+    renderItem={renderGlyphListItem(Font, onSelected)}
+  />
+));
 
 const usedFonts = {};
 

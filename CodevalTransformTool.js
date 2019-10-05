@@ -17,7 +17,7 @@ const tool = {
     try {
       const source = await editorApi.getValue();
       const code = await codevalApi.transform(source);
-      
+
       Clipboard.setString(code);
     } catch (error) {
       consoleApi.error(error);

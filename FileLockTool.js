@@ -8,7 +8,7 @@ const FileLockButton = ({ item, ...props }) => {
 
   useEffect(() => {
     const updatedHandler = () => setUpdated(0);
-    
+
     item.addUpdatedListener(updatedHandler);
 
     return () => item.removeUpdatedListener(updatedHandler);
