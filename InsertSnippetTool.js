@@ -55,30 +55,28 @@ const SnippetsListView = ({ initialized, list, selectedItem, onChange }) => (
   <FlatList
     data={list}
     keyExtractor={keyExtractor}
-    renderItem={({ item }) =>
-      snippetItemRenderer(item, item === selectedItem, () => onChange(item))
-    }
+    renderItem={({ item }) => snippetItemRenderer(item, item === selectedItem, () => onChange(item))}
     ListEmptyComponent={() => noSnippetRenderer(initialized)}
   />
 );
 
 /*
     This needs some explanation. Since I didn't came up with a nice solution,
-    I coded this dirty hack. It works because tool after evaluation is being 
-    inserted into Playground application react DOM tree and it has access to 
-    all contexts Playground have. By adding connect() here I've accessed 
+    I coded this dirty hack. It works because tool after evaluation is being
+    inserted into Playground application react DOM tree and it has access to
+    all contexts Playground have. By adding connect() here I've accessed
     Plaground app global state to retrieve snippets list instead of reading it
-    from filesystem. So can you, but be careful, you will be playing with 
+    from filesystem. So can you, but be careful, you will be playing with
     global state of entire application.
-    
-    It is not some kind of sacred knowledge and currently there are not much 
+
+    It is not some kind of sacred knowledge and currently there are not much
     information in it, but anyway, if you try hard, you may break something.
-    On other side, this state does not hold anything that will not be fixed by 
+    On other side, this state does not hold anything that will not be fixed by
     restarting or re-installing the app, so go ahead and do it.
 
-    I'll try to add meaningful doc with this kind of information later, after 
+    I'll try to add meaningful doc with this kind of information later, after
     all the basic functionality of the app is completed.
-    
+
     TLDR;
     Le optimization.
 */
@@ -187,11 +185,10 @@ const getSnippetParameters = ({ parameters, body }) => {
     }));
 };
 
-const applyValuesToSnippet = ({ body }, values) =>
-  Object.keys(values).reduce(
-    (result, name) => result.replace(new RegExp(`\\$\\{${name}\\}`, 'g'), values[name]),
-    body,
-  );
+const applyValuesToSnippet = ({ body }, values) => Object.keys(values).reduce(
+  (result, name) => result.replace(new RegExp(`\\$\\{${name}\\}`, 'g'), values[name]),
+  body,
+);
 
 const SnippetSelectScreen = ({ onSubmit, onCancel }) => {
   const [parameters, setParameters] = useState(null);

@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Immersive } from 'react-native-immersive';
 
-import { VGroup, SBGroup, TextButton, Text } from '@actualwave/react-native-kingnare-style';
+import { VGroup, RGroup, TextButton, Text } from '@actualwave/react-native-kingnare-style';
 
 let persistentActive = false;
 
@@ -18,23 +18,28 @@ const ImmersiveViewButton = () => {
   persistentActive = active;
 
   return (
-    <SBGroup noPadding>
-      <Text>Immersive view is {active ? 'active' : 'not active'}.</Text>
-      <TextButton
-        label={active ? 'Deactivate' : 'Activate'}
-        onPress={() => {
-          if (active) {
-            Immersive.off();
-            Immersive.removeImmersiveListener(restoreImmersive);
-            setActive(false);
-          } else {
-            Immersive.on();
-            Immersive.addImmersiveListener(restoreImmersive);
-            setActive(true);
-          }
-        }}
-      />
-    </SBGroup>
+    <>
+      <Text>
+        Immersive view is
+        {active ? ' active' : ' not active'}.
+      </Text>
+      <RGroup noPadding>
+        <TextButton
+          label={active ? 'Deactivate' : 'Activate'}
+          onPress={() => {
+            if (active) {
+              Immersive.off();
+              Immersive.removeImmersiveListener(restoreImmersive);
+              setActive(false);
+            } else {
+              Immersive.on();
+              Immersive.addImmersiveListener(restoreImmersive);
+              setActive(true);
+            }
+          }}
+        />
+      </RGroup>
+    </>
   );
 };
 

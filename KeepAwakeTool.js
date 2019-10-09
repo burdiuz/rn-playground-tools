@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import KeepAwake from 'react-native-keep-awake';
 
-import { VGroup, SBGroup, TextButton, Text } from '@actualwave/react-native-kingnare-style';
+import { VGroup, RGroup, TextButton, Text } from '@actualwave/react-native-kingnare-style';
 
 let persistentActive = false;
 
@@ -10,16 +10,21 @@ const KeepAwakeButton = () => {
   persistentActive = active;
 
   return (
-    <SBGroup noPadding>
-      <Text>Keep Awake is {active ? 'active' : 'not active'}.</Text>
-      <TextButton
-        label={active ? 'Deactivate' : 'Activate'}
-        onPress={() => {
-          active ? KeepAwake.deactivate() : KeepAwake.activate();
-          setActive(!active);
-        }}
-      />
-    </SBGroup>
+    <>
+      <Text>
+        Keep Awake is
+        {active ? ' active' : ' not active'}.
+      </Text>
+      <RGroup noPadding>
+        <TextButton
+          label={active ? 'Deactivate' : 'Activate'}
+          onPress={() => {
+            active ? KeepAwake.deactivate() : KeepAwake.activate();
+            setActive(!active);
+          }}
+        />
+      </RGroup>
+    </>
   );
 };
 

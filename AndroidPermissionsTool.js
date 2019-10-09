@@ -7,8 +7,8 @@ import { VGroup, HRule, TextButton, Text, Small } from '@actualwave/react-native
 /*
 https://facebook.github.io/react-native/docs/permissionsandroid
 
-    This Tool should display a modal with all permissions available 
-    to turn on/off with switches, so user may enable or disable them 
+    This Tool should display a modal with all permissions available
+    to turn on/off with switches, so user may enable or disable them
     at once.
 */
 
@@ -17,11 +17,11 @@ TODO
     Add to tool configuration
     mimeType: String | String[], -- list of file mime types Tool can work with
     os: String | String[], -- IOS, WINDOWS, ANDROID. Code of OS where Tool can operate.
-    type: String | String[] -- EDITOR, FILE, DIRECTORY, PROJECT, GENERAL. Add type of the tool, 
+    type: String | String[] -- EDITOR, FILE, DIRECTORY, PROJECT, GENERAL. Add type of the tool,
           where it's button should be displayed. Different tools receive different arguments.
           File tool will receive file, parent directory and project info objects.
           General tool will not receive anything.
-    group: String -- Grouping will allow creating groups of tools surrounded by separators. 
+    group: String -- Grouping will allow creating groups of tools surrounded by separators.
                      Not sure if I should do this, need time to think.
     order: Number -- sorting number to sort tools on panel.
 */
@@ -200,15 +200,13 @@ const PermissionRow = ({ name, description }) => {
   );
 };
 
-const AndroidPermissionsView = () => {
-  return (
-    <>
-      {PERMISSIONS.map(({ name, description }) => (
-        <PermissionRow key={name} name={name} description={description} />
-      ))}
-    </>
-  );
-};
+const AndroidPermissionsView = () => (
+  <>
+    {PERMISSIONS.map(({ name, description }) => (
+      <PermissionRow key={name} name={name} description={description} />
+    ))}
+  </>
+);
 
 const tool = {
   title: 'Android Permissions',

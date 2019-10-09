@@ -25,12 +25,11 @@ const styles = StyleSheet.create({
   rowWrap: { flexDirection: 'row', flexWrap: 'wrap' },
 });
 
-const capitalizeImport = (name) =>
-  name
-    .replace(/^[^/]+\//, '')
-    .match(/[a-z\d]+/gi)
-    .map((part) => (part ? `${part.charAt().toUpperCase()}${part.substr(1)}` : part))
-    .join('');
+const capitalizeImport = (name) => name
+  .replace(/^[^/]+\//, '')
+  .match(/[a-z\d]+/gi)
+  .map((part) => (part ? `${part.charAt().toUpperCase()}${part.substr(1)}` : part))
+  .join('');
 
 const retrieveModuleExportsList = (name) => {
   const factory = imports.getImportedModule(name);
@@ -60,17 +59,16 @@ const buildExportsList = (moduleExports, importName) => {
   return `{ ${list.join(', ')} }`;
 };
 
-const buildImports = (selectedImports) =>
-  Object.keys(selectedImports)
-    .map((importName) => {
-      const moduleExports = selectedImports[importName];
+const buildImports = (selectedImports) => Object.keys(selectedImports)
+  .map((importName) => {
+    const moduleExports = selectedImports[importName];
 
-      if (!moduleExports) return '';
+    if (!moduleExports) return '';
 
-      return `import ${buildExportsList(moduleExports, importName)} from "${importName}";\n`;
-    })
-    .filter((importStr) => !!importStr)
-    .join('');
+    return `import ${buildExportsList(moduleExports, importName)} from "${importName}";\n`;
+  })
+  .filter((importStr) => !!importStr)
+  .join('');
 
 const selectPackage = (selectedImports, importName) => ({
   ...selectedImports,
@@ -109,8 +107,7 @@ const deselectPackageExportName = (selectedExports, exportName) => {
   return Object.keys(result).length ? result : undefined;
 };
 
-const isPackageExportNameSelected = (selectedExports, exportName) =>
-  !!(selectedExports && selectedExports[exportName]);
+const isPackageExportNameSelected = (selectedExports, exportName) => !!(selectedExports && selectedExports[exportName]);
 
 const togglePackageExportNameSelection = (selectedExports, exportName) => {
   const toggleSelection = isPackageExportNameSelected(selectedExports, exportName)
@@ -120,9 +117,7 @@ const togglePackageExportNameSelection = (selectedExports, exportName) => {
   return toggleSelection(selectedExports, exportName);
 };
 
-const ModuleExportsListItem = ({ name, selected, onPress }) => {
-  return <CheckBox label={name} selected={selected} onPress={onPress} />;
-};
+const ModuleExportsListItem = ({ name, selected, onPress }) => <CheckBox label={name} selected={selected} onPress={onPress} />;
 
 const renderModuleExportsListItem = (selectedExports, setSelectedExports, importName) => ({
   item,
@@ -139,23 +134,21 @@ const renderModuleExportsListItem = (selectedExports, setSelectedExports, import
   );
 };
 
-const ModuleExportsList = ({ importName, list, selectedExports, setSelectedExports }) => {
-  return (
-    <FlatList
-      data={list}
-      extraData={selectedExports}
-      keyExtractor={(name) => name}
-      renderItem={renderModuleExportsListItem(selectedExports, setSelectedExports, importName)}
-      style={{ marginLeft: 25 }}
-    />
-  );
-};
+const ModuleExportsList = ({ importName, list, selectedExports, setSelectedExports }) => (
+  <FlatList
+    data={list}
+    extraData={selectedExports}
+    keyExtractor={(name) => name}
+    renderItem={renderModuleExportsListItem(selectedExports, setSelectedExports, importName)}
+    style={{ marginLeft: 25 }}
+  />
+);
 
 const ImportsListItem = ({ name, selected, onPress, selectedExports, setSelectedExports }) => {
   const [exportsList, setExportsList] = useState(null);
 
   const version = getModuleVersion(name);
-  let versionText = version ? <Text style={{ marginHorizontal: 10 }}>{version}</Text> : null;
+  const versionText = version ? <Text style={{ marginHorizontal: 10 }}>{version}</Text> : null;
 
   return (
     <Section
@@ -167,12 +160,12 @@ const ImportsListItem = ({ name, selected, onPress, selectedExports, setSelected
           setExportsList(retrieveModuleExportsList(name));
         }
       }}
-      headerChildren={
+      headerChildren={(
         <>
           {versionText}
           <CheckBoxButton selected={selected} onPress={onPress} />
         </>
-      }
+)}
     >
       {exportsList ? (
         <ModuleExportsList
@@ -186,37 +179,33 @@ const ImportsListItem = ({ name, selected, onPress, selectedExports, setSelected
   );
 };
 
-const renderImportsListItem = (selectedImports, setSelectedImports) => ({ item }) => {
-  return (
-    <ImportsListItem
-      key={item}
-      name={item}
-      selectedExports={selectedImports[item]}
-      setSelectedExports={(selectedExports) => {
-        setSelectedImports({
-          ...selectedImports,
-          [item]: selectedExports,
-        });
-      }}
-      selected={isPackageSelected(selectedImports, item)}
-      onPress={() => {
-        setSelectedImports(togglePackageSelection(selectedImports, item));
-      }}
-    />
-  );
-};
+const renderImportsListItem = (selectedImports, setSelectedImports) => ({ item }) => (
+  <ImportsListItem
+    key={item}
+    name={item}
+    selectedExports={selectedImports[item]}
+    setSelectedExports={(selectedExports) => {
+      setSelectedImports({
+        ...selectedImports,
+        [item]: selectedExports,
+      });
+    }}
+    selected={isPackageSelected(selectedImports, item)}
+    onPress={() => {
+      setSelectedImports(togglePackageSelection(selectedImports, item));
+    }}
+  />
+);
 
-const ImportsList = ({ list, style, selectedImports, setSelectedImports }) => {
-  return (
-    <FlatList
-      data={list}
-      extraData={selectedImports}
-      keyExtractor={(name) => name}
-      renderItem={renderImportsListItem(selectedImports, setSelectedImports)}
-      style={style}
-    />
-  );
-};
+const ImportsList = ({ list, style, selectedImports, setSelectedImports }) => (
+  <FlatList
+    data={list}
+    extraData={selectedImports}
+    keyExtractor={(name) => name}
+    renderItem={renderImportsListItem(selectedImports, setSelectedImports)}
+    style={style}
+  />
+);
 
 const ImportToolView = ({ list, close, pasteIntoCode, copyToClipboard }) => {
   const [selectedImports, setSelectedImports] = useState({});
