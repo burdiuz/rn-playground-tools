@@ -18,7 +18,11 @@ const FilePinButton = ({ item, ...props }) => {
     <IconButton
       {...props}
       icon={
-        <MaterialCommunityIcons name={item.pinned ? 'pin' : 'pin-off'} color={TEXT_ACTIVE_COLOR} size={16} />
+        <MaterialCommunityIcons
+          name={item.pinned ? 'pin-off' : 'pin'}
+          color={TEXT_ACTIVE_COLOR}
+          size={16}
+        />
       }
       style={{ marginHorizontal: 4 }}
     />

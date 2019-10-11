@@ -981,12 +981,14 @@ const AddCustomProperty = memo(
             onChangeText={setName}
             style={{ flex: 1 }}
           />
+          {/*
           <DropDown
             items={PROPERTY_TYPES}
             selectedItem={typeItem}
             onChange={setTypeItem}
             style={{ width: 150 }}
           />
+          */}
           <TextButton
             label=" Add "
             onPress={() => {
