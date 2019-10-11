@@ -53,14 +53,14 @@ const CopyFormView = (props) => {
   return (
     <FormContainer
       title={titleRenderer(props)}
-      buttons={(
+      buttons={
         <FormButtons
           onSubmit={handleSubmit}
           onCancel={onCancel}
           enabled={!isSubmitting}
           submitTitle={submitTitleRenderer(props)}
         />
-)}
+      }
     >
       <FormTextInput
         label={directory ? 'Directory Name' : 'File Name'}
@@ -70,7 +70,7 @@ const CopyFormView = (props) => {
         errorMessage={nameError}
       />
       <ActiveText>
-Destination:
+        Destination:
         {target.name}
       </ActiveText>
       <ActiveArea style={{ flex: 1 }}>
@@ -124,18 +124,19 @@ const CopyForm = withFormik({
 
     return { name: file.name, directory, target: parent, move: directory };
   },
-  validationSchema: () => yup.object().shape({
-    name: yup
-      .string()
-      .matches(/^[^\.]/, 'File name should not start with " . " symbol')
-      .matches(
-        /^[^|\\?*<":>+[\]\/']+$/,
-        'File name should not contain "| \\ ? * < " : > + [ ] / \' " symbols',
-      )
-    // uses validation schema to retrieve target value
-      .fileNotExists(({ parent: { target } }) => target.fs)
-      .required('File name is required'),
-  }),
+  validationSchema: () =>
+    yup.object().shape({
+      name: yup
+        .string()
+        .matches(/^[^\.]/, 'File name should not start with " . " symbol')
+        .matches(
+          /^[^|\\?*<":>+[\]\/']+$/,
+          'File name should not contain "| \\ ? * < " : > + [ ] / \' " symbols',
+        )
+        // uses validation schema to retrieve target value
+        .fileNotExists(({ parent: { target } }) => target.fs)
+        .required('File name is required'),
+    }),
   handleSubmit: (values, { props: { onSubmit } }) => onSubmit(values),
   displayName: 'CopyForm',
 })(CopyFormView);
