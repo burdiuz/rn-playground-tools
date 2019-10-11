@@ -358,7 +358,7 @@ const SelectGlyphView = ({ list, selectedItem, onCancel, onContinue }) => {
         <Spacer />
       )}
       <Small style={{ margin: 5 }}>
-        All icons are aailable thanks to react-native-vector-icons package.
+        All icons are available thanks to react-native-vector-icons package.
       </Small>
       <HGroup noHorizontalPadding>
         <TextButton label="Cancel" onPress={onCancel} />
