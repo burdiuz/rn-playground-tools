@@ -14,6 +14,7 @@ import {
   SmallHeader,
   SlimHeader,
   TextButton,
+  TextInput,
   InputPlaceholder,
   HGroup,
   HRule,
@@ -31,8 +32,8 @@ const FONTS = [
   { label: 'EvilIcons', value: () => require('react-native-vector-icons/EvilIcons') },
   { label: 'Feather', value: () => require('react-native-vector-icons/Feather') },
   { label: 'FontAwesome', value: () => require('react-native-vector-icons/FontAwesome') },
-// { label: 'FontAwesome5', value: () => require('react-native-vector-icons/FontAwesome5') },
-// { label: 'FontAwesome5Pro', value: () => require('react-native-vector-icons/FontAwesome5Pro') },
+  // { label: 'FontAwesome5', value: () => require('react-native-vector-icons/FontAwesome5') },
+  // { label: 'FontAwesome5Pro', value: () => require('react-native-vector-icons/FontAwesome5Pro') },
   { label: 'Fontisto', value: () => require('react-native-vector-icons/Fontisto') },
   { label: 'Foundation', value: () => require('react-native-vector-icons/Foundation') },
   { label: 'Ionicons', value: () => require('react-native-vector-icons/Ionicons') },
@@ -58,12 +59,9 @@ const ICON_COMPONENT_OPTIONS = [
   { label: 'Icon Button', value: AS_BUTTON },
 ];
 
-const MIN_SIZE = 8;
 const MAX_SIZE = 300;
 
-const renderPreview = (Font, name, type, zoom) => {
-  const size = MIN_SIZE + Math.floor(MAX_SIZE * zoom);
-
+const renderPreview = (Font, name, type, size) => {
   switch (type) {
     case AS_ICON:
       return <Font name={name} color={TEXT_COLOR} size={size} />;
@@ -95,11 +93,7 @@ const renderPreview = (Font, name, type, zoom) => {
           backgroundColor={BUTTON_COLOR}
           onPress={() => null}
         >
-          <Text>
-            {name}
-            {' '}
-Button
-          </Text>
+          <Text>{name} Button</Text>
         </Font.Button>
       );
   }
@@ -119,8 +113,7 @@ const styles = StyleSheet.create({
   glyphListItemText: { marginLeft: 10 },
 });
 
-const generateResultingData = (type, fontFamily, name, includeImport, includeImgComp, zoom) => {
-  const size = MIN_SIZE + Math.floor(MAX_SIZE * zoom);
+const generateResultingData = (type, fontFamily, name, includeImport, includeImgComp, size) => {
   let result = '';
 
   switch (type) {
@@ -169,6 +162,14 @@ const IconImage = ({ size = ${size}, color = '#ffffff, loadingView = null }) => 
   });
 };
 
+const SizeInput = ({ value, onChange, style }) => (
+  <TextInput
+    value={`${value}`}
+    onChangeText={(newValue) => onChange(parseInt(newValue, 10) || 0)}
+    style={style}
+  />
+);
+
 const GenerateCodeView = ({
   fontFamily,
   Font,
@@ -182,18 +183,13 @@ const GenerateCodeView = ({
   const [useAs, setUseAs] = useState(ICON_COMPONENT_OPTIONS[0]);
   const [includeImport, setIncludeImport] = useState(false);
   const [includeImgComp, setIncludeImgComp] = useState(false);
-  const [zoom, setZoom] = useState(0.2);
+  const [size, setSize] = useState(68);
 
   const { value: type } = useAs;
 
   return (
     <>
-      <SmallHeader>
-        {fontFamily}
-        {' '}
-/
-        {name}
-      </SmallHeader>
+      <SmallHeader>{`${fontFamily} / ${name}`}</SmallHeader>
       <HGroup noHorizontalPadding style={{ alignSelf: 'stretch' }}>
         <Font
           name={name}
@@ -220,11 +216,18 @@ const GenerateCodeView = ({
               }}
             />
           </InputPlaceholder>
-          <HSlider
-            value={zoom}
-            onChange={(value) => setZoom(value)}
-            style={{ marginHorizontal: 10 }}
-          />
+          <HGroup noPadding>
+            <HSlider
+              value={size / MAX_SIZE}
+              onChange={(value) => setSize((value * MAX_SIZE) >>> 0)}
+              style={{ flex: 1, marginHorizontal: 10 }}
+            />
+            <SizeInput
+              value={size}
+              onChange={(value) => setSize(value)}
+              style={{ width: 40, marginRight: 10 }}
+            />
+          </HGroup>
         </View>
       </HGroup>
       <CheckBox
@@ -248,7 +251,7 @@ const GenerateCodeView = ({
           padding: 20,
         }}
       >
-        {renderPreview(Font, name, type, zoom)}
+        {renderPreview(Font, name, type, size)}
       </View>
       <HGroup noHorizontalPadding>
         <TextButton label="Cancel" onPress={onCancel} />
@@ -258,7 +261,7 @@ const GenerateCodeView = ({
           label="Copy"
           onPress={() => {
             copyToClipboard(
-              generateResultingData(type, fontFamily, name, includeImport, includeImgComp, zoom),
+              generateResultingData(type, fontFamily, name, includeImport, includeImgComp, size),
             );
           }}
           style={{ marginHorizontal: 10 }}
@@ -267,7 +270,7 @@ const GenerateCodeView = ({
           label="Paste To Code"
           onPress={() => {
             pasteIntoCode(
-              generateResultingData(type, fontFamily, name, includeImport, includeImgComp, zoom),
+              generateResultingData(type, fontFamily, name, includeImport, includeImgComp, size),
             );
           }}
         />
@@ -313,9 +316,9 @@ const prepareFont = ({ label, value: factory }) => {
     usedFonts[label] = {
       Font,
       fontFamily: label,
-      glyphs: Object.keys(FontAwesome.getRawGlyphMap())
-        .sort()
-        .filter(Font.hasIcon),
+      glyphs: Object.keys(Font.getRawGlyphMap())
+        .filter(Font.hasIcon)
+        .sort(),
     };
   }
 

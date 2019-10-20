@@ -259,7 +259,7 @@ const parseTagByIndex = (str, lookupIndex) => {
 const getNameImportFromCode = (code, component) => {
   const rgx = new RegExp(
     /* Using [^\0]* instead of .* because I need all caracters including newline */
-    `[^\\0]*(import\\s([^\\0]*?)((\\*)\\s+as\\s+|(?<=[{,]+)\\s*([\\w$]+)\\s+as\\s+)?\\s*(${component}(?=[^\\w$]))[^\\0]*?\\sfrom\\s+(\`|"|')([^'"\`]+)\\7)`,
+    `[^\\0]*(import\\s([^\\0]*?)((\\*)\\s+as\\s+|[{,]\\s*([\\w$]+)\\s+as\\s+)?\\s*(${component}(?=[^\\w$]))[^\\0]*?\\sfrom\\s+(\`|"|')([^'"\`]+)\\7)`,
   );
   /*
    * 0 -- Everything regexp captured, I put "greedy everyting" first to be sure next group don't capture multiple imports
@@ -276,7 +276,7 @@ const getNameImportFromCode = (code, component) => {
     importString,
     preNameString,,
     originalNameOuter,
-    originalNameInner,,
+    originalNameInner,
     quoteType,
     packagePath,
   ] = code.match(rgx) || [];

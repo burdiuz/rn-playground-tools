@@ -22,7 +22,8 @@ import {
   DropDown,
 } from '@actualwave/react-native-kingnare-style';
 
-const IMAGE_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAMAAABg3Am1AAAABGdBTUEAALGPC/xhBQAAAwBQTFRFAAAAVrO0V7S1WrS1Xba3Ybi4Yri5ZLm6abu8cL6/cr/AfcTFf8XG6V5e6l9f6mBg62Rk6mVl7G9v97k+9rk/97pB97tD9rtF97tG97xG97xI9r1M979P+L5K979Q98BS98JZ+MNb+MZi+Mdm+ctw+Mx2+M9+v4W/g8fHicnKi8rLjMvMj8zNkc3Oks7OlM/PmdHRm9HSn9TUqNfYsNvctN3dud/fu+Dg746O74+P8JCQ8JGR8JOT8ZeX8ZmZ8Zqa8Zub8qGh8qKi86mp9K2t9K6u9K+v9LKy9ba29bm59r+/wIfAwIjAwYnBw47DxJDExZHFzaHNzqHOz6XP0ajR0qnS06zT1K7U1bHV2LXY2rja3L3c+dGD+dKF+dOG+teS+t6m4MTg4cfh4sji5M3k5ujq5+nr6Onr6Orr6Ors6evt6uzt6+zu6+3v7O3v7O7v7e7w7u/x7vDx7/Dy8PLz8vP08/T08/T19PT1AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAiTx58wAAAQB0Uk5T////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////AFP3ByUAAAAJcEhZcwAAEnQAABJ0Ad5mH3gAAAAYdEVYdFNvZnR3YXJlAHBhaW50Lm5ldCA0LjEuNv1OCegAAAIESURBVEhLvZRZQxMxFIWnWtxKQSlWAVFEQURFUdlUlE1ccEGharW4U2cESplS8d8fT24ywwzIQ+ah30Ob3ORM7slN4sCSBIKbqQM5CqyXo7iywonjBzEM/FmL4idKyRIH8y1ZRcs00Jv7Hx2c5mkPa0owawRTwEUzJU6eAjcisCSJoDkT4xqjS28MRXaaMwP8rVbIthLcMFUKAX5cCXgBGb8LaBMN8mCHg37Z7M8Ac00DFZ1seQtolQJpHokLT1ZYKZVKnI87Q0Mj/Kv5ihpbTyZDOB913//bGA9Fs+WKV4CvLZSZ01lxp/kiHn4pwc/F1yEFYMfTMN3L50Iu8NsbnldtjIenrdlTbJxvF3rYPCxHKgLLA2+VVJRghpeHgdPa3BnWw0zb5RDHZSd04exIIhi8ahgFnk+Ma+5x7NOy8IFNvyrUleC6STSVOga0mbOWzd4HFkw5KRAHjfNgh4P3zPIboMsQpzt4vXdidSgsv6NypW8/XxlXm8Pbh1q4S5YkEHzUmy0scmlJNkh6D+Lh+8uFkLe86jLCT5kXPoacVksSCMaa0un0ETYvdXb2qTvtajw+1b7rrnMkCLlyp2/JwbsN5HO5rt1XQxL+zT9+Q/eJvBqWJBFMPQx5xog8rQGsRzTAroMH5sYoTgKbJl0DD5NpKfThezwXotasR9kTYM/SA/APZI1gaI5PBh0AAAAASUVORK5CYII=';
+const IMAGE_URL =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAMAAABg3Am1AAAABGdBTUEAALGPC/xhBQAAAwBQTFRFAAAAVrO0V7S1WrS1Xba3Ybi4Yri5ZLm6abu8cL6/cr/AfcTFf8XG6V5e6l9f6mBg62Rk6mVl7G9v97k+9rk/97pB97tD9rtF97tG97xG97xI9r1M979P+L5K979Q98BS98JZ+MNb+MZi+Mdm+ctw+Mx2+M9+v4W/g8fHicnKi8rLjMvMj8zNkc3Oks7OlM/PmdHRm9HSn9TUqNfYsNvctN3dud/fu+Dg746O74+P8JCQ8JGR8JOT8ZeX8ZmZ8Zqa8Zub8qGh8qKi86mp9K2t9K6u9K+v9LKy9ba29bm59r+/wIfAwIjAwYnBw47DxJDExZHFzaHNzqHOz6XP0ajR0qnS06zT1K7U1bHV2LXY2rja3L3c+dGD+dKF+dOG+teS+t6m4MTg4cfh4sji5M3k5ujq5+nr6Onr6Orr6Ors6evt6uzt6+zu6+3v7O3v7O7v7e7w7u/x7vDx7/Dy8PLz8vP08/T08/T19PT1AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAiTx58wAAAQB0Uk5T////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////AFP3ByUAAAAJcEhZcwAAEnQAABJ0Ad5mH3gAAAAYdEVYdFNvZnR3YXJlAHBhaW50Lm5ldCA0LjEuNv1OCegAAAIESURBVEhLvZRZQxMxFIWnWtxKQSlWAVFEQURFUdlUlE1ccEGharW4U2cESplS8d8fT24ywwzIQ+ah30Ob3ORM7slN4sCSBIKbqQM5CqyXo7iywonjBzEM/FmL4idKyRIH8y1ZRcs00Jv7Hx2c5mkPa0owawRTwEUzJU6eAjcisCSJoDkT4xqjS28MRXaaMwP8rVbIthLcMFUKAX5cCXgBGb8LaBMN8mCHg37Z7M8Ac00DFZ1seQtolQJpHokLT1ZYKZVKnI87Q0Mj/Kv5ihpbTyZDOB913//bGA9Fs+WKV4CvLZSZ01lxp/kiHn4pwc/F1yEFYMfTMN3L50Iu8NsbnldtjIenrdlTbJxvF3rYPCxHKgLLA2+VVJRghpeHgdPa3BnWw0zb5RDHZSd04exIIhi8ahgFnk+Ma+5x7NOy8IFNvyrUleC6STSVOga0mbOWzd4HFkw5KRAHjfNgh4P3zPIboMsQpzt4vXdidSgsv6NypW8/XxlXm8Pbh1q4S5YkEHzUmy0scmlJNkh6D+Lh+8uFkLe86jLCT5kXPoacVksSCMaa0un0ETYvdXb2qTvtajw+1b7rrnMkCLlyp2/JwbsN5HO5rt1XQxL+zT9+Q/eJvBqWJBFMPQx5xog8rQGsRzTAroMH5sYoTgKbJl0DD5NpKfThezwXotasR9kTYM/SA/APZI1gaI5PBh0AAAAASUVORK5CYII=';
 const IMAGE_DATA = { uri: IMAGE_URL };
 
 const STORAGE_KEY = '@tool-prettier-code-format';
@@ -83,7 +84,8 @@ const getOptionsFromStorage = async () => {
   return options || { ...DEFAULT_OPTIONS };
 };
 
-const setOptionsToStorage = async (options) => AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(options));
+const setOptionsToStorage = async (options) =>
+  AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(options));
 
 const PrettierOptionsFormView = ({
   values: {
@@ -115,7 +117,7 @@ const PrettierOptionsFormView = ({
         errorMessage={errors.printWidth}
       />
       <Small style={{ marginBottom: 10 }}>
-          Specify the line length that the printer will wrap on
+        Specify the line length that the printer will wrap on
       </Small>
       <FormTextInput
         label="Tab Width"
@@ -157,8 +159,8 @@ const PrettierOptionsFormView = ({
           onChange={({ value }) => handleChange('trailingComma')(value)}
         />
         <Small>
-            Print trailing commas wherever possible when multi-line. (A single-line array, for
-            example, never gets trailing commas.)
+          Print trailing commas wherever possible when multi-line. (A single-line array, for
+          example, never gets trailing commas.)
         </Small>
       </InputPlaceholder>
 
@@ -173,8 +175,8 @@ const PrettierOptionsFormView = ({
         onPress={() => handleChange('jsxBracketSameLine')(!jsxBracketSameLine)}
       />
       <Small style={{ marginBottom: 10 }}>
-          Put the &gt; of a multi-line JSX element at the end of the last line instead of being
-          alone on the next line (does not apply to self closing elements).
+        Put the &gt; of a multi-line JSX element at the end of the last line instead of being alone
+        on the next line (does not apply to self closing elements).
       </Small>
 
       <InputPlaceholder label="Arrow Function Parentheses" keepErrorMessageSpace={false}>
@@ -185,7 +187,7 @@ const PrettierOptionsFormView = ({
         />
       </InputPlaceholder>
       <Small style={{ marginBottom: 10 }}>
-          Include parentheses around a sole arrow function parameter.
+        Include parentheses around a sole arrow function parameter.
       </Small>
 
       <InputPlaceholder label="Prose Wrap">
@@ -231,16 +233,17 @@ const PrettierOptionsForm = withFormik({
     tabWidth: String(tabWidth),
   }),
   handleSubmit: (values, { props: { onSubmit } }) => onSubmit(values),
-  validationSchema: () => yup.object().shape({
-    printWidth: yup
-      .number(NUM_ERROR_MSG)
-      .positive(NUM_ERROR_MSG)
-      .required(NUM_ERROR_MSG),
-    tabWidth: yup
-      .number(NUM_ERROR_MSG)
-      .positive(NUM_ERROR_MSG)
-      .required(NUM_ERROR_MSG),
-  }),
+  validationSchema: () =>
+    yup.object().shape({
+      printWidth: yup
+        .number(NUM_ERROR_MSG)
+        .positive(NUM_ERROR_MSG)
+        .required(NUM_ERROR_MSG),
+      tabWidth: yup
+        .number(NUM_ERROR_MSG)
+        .positive(NUM_ERROR_MSG)
+        .required(NUM_ERROR_MSG),
+    }),
   displayName: 'PrettierForm',
 })(PrettierOptionsFormView);
 
@@ -279,12 +282,17 @@ const prettifyEditorCode = async ({ editorApi }) => {
   const parser = await requireModule('parser-babylon');
   const prettier = await requireModule('prettier');
   const currentValue = await editorApi.getValue();
-
-  const prettified = prettier.format(currentValue, {
-    ...options,
-    parser: 'babel',
-    plugins: [parser],
-  });
+  let prettified;
+  
+  try {
+    prettified = prettier.format(currentValue, {
+      ...options,
+      parser: 'babel',
+      plugins: [parser],
+    });
+  } catch (error) {
+    console.error(error);
+  }
 
   editorApi.setValue(prettified);
 };
