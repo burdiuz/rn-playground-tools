@@ -146,12 +146,14 @@ CopyForm.propTypes = {
   parent: PropTypes.shape({ path: PropTypes.func.isRequired }).isRequired,
   file: PropTypes.shape({ name: PropTypes.string.isRequired }).isRequired,
   onCancel: PropTypes.func,
-  submitTitle: PropTypes.string,
+  titleRenderer: PropTypes.func,
+  submitTitleRenderer: PropTypes.func,
 };
 
 CopyForm.defaultProps = {
   onCancel: undefined,
-  submitTitle: undefined,
+  titleRenderer: undefined,
+  submitTitleRenderer: undefined,
 };
 
 // TODO Create file from downloading it from a URL

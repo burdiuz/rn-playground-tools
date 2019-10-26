@@ -25,17 +25,18 @@ const styles = StyleSheet.create({
   rowWrap: { flexDirection: 'row', flexWrap: 'wrap' },
 });
 
-const capitalizeImport = (name) => name
-  .replace(/^[^/]+\//, '')
-  .match(/[a-z\d]+/gi)
-  .map((part) => (part ? `${part.charAt().toUpperCase()}${part.substr(1)}` : part))
-  .join('');
+const capitalizeImport = (name) =>
+  name
+    .replace(/^[^/]+\//, '')
+    .match(/[a-z\d]+/gi)
+    .map((part) => (part ? `${part.charAt().toUpperCase()}${part.substr(1)}` : part))
+    .join('');
 
 const retrieveModuleExportsList = (name) => {
   const factory = imports.getImportedModule(name);
   const module = factory();
 
-  return Object.keys(module);
+  return Object.keys(module).sort((a, b) => (a.toLowerCase() < b.toLowerCase() ? -1 : 1));
 };
 
 const buildExportsList = (moduleExports, importName) => {
@@ -59,16 +60,17 @@ const buildExportsList = (moduleExports, importName) => {
   return `{ ${list.join(', ')} }`;
 };
 
-const buildImports = (selectedImports) => Object.keys(selectedImports)
-  .map((importName) => {
-    const moduleExports = selectedImports[importName];
+const buildImports = (selectedImports) =>
+  Object.keys(selectedImports)
+    .map((importName) => {
+      const moduleExports = selectedImports[importName];
 
-    if (!moduleExports) return '';
+      if (!moduleExports) return '';
 
-    return `import ${buildExportsList(moduleExports, importName)} from "${importName}";\n`;
-  })
-  .filter((importStr) => !!importStr)
-  .join('');
+      return `import ${buildExportsList(moduleExports, importName)} from "${importName}";\n`;
+    })
+    .filter((importStr) => !!importStr)
+    .join('');
 
 const selectPackage = (selectedImports, importName) => ({
   ...selectedImports,
@@ -107,7 +109,8 @@ const deselectPackageExportName = (selectedExports, exportName) => {
   return Object.keys(result).length ? result : undefined;
 };
 
-const isPackageExportNameSelected = (selectedExports, exportName) => !!(selectedExports && selectedExports[exportName]);
+const isPackageExportNameSelected = (selectedExports, exportName) =>
+  !!(selectedExports && selectedExports[exportName]);
 
 const togglePackageExportNameSelection = (selectedExports, exportName) => {
   const toggleSelection = isPackageExportNameSelected(selectedExports, exportName)
@@ -117,7 +120,9 @@ const togglePackageExportNameSelection = (selectedExports, exportName) => {
   return toggleSelection(selectedExports, exportName);
 };
 
-const ModuleExportsListItem = ({ name, selected, onPress }) => <CheckBox label={name} selected={selected} onPress={onPress} />;
+const ModuleExportsListItem = ({ name, selected, onPress }) => (
+  <CheckBox label={name} selected={selected} onPress={onPress} />
+);
 
 const renderModuleExportsListItem = (selectedExports, setSelectedExports, importName) => ({
   item,
@@ -160,12 +165,12 @@ const ImportsListItem = ({ name, selected, onPress, selectedExports, setSelected
           setExportsList(retrieveModuleExportsList(name));
         }
       }}
-      headerChildren={(
+      headerChildren={
         <>
           {versionText}
           <CheckBoxButton selected={selected} onPress={onPress} />
         </>
-)}
+      }
     >
       {exportsList ? (
         <ModuleExportsList

@@ -20,9 +20,11 @@ import {
   SmallHeader,
   SlimHeader,
   DropDown,
+  ELEMENT_MIN_SIZE,
   TEXT_ACTIVE_COLOR,
   TEXT_DISABLED_COLOR,
   DARK_BORDER_COLOR,
+  DISABLED_BORDER_COLOR,
   withHostedModal,
   Text,
   Small,
@@ -46,7 +48,8 @@ const SINGLELINE_COMMENT_IDENTIFIER = '//';
 const MULTILINE_COMMENT_IDENTIFIER = '/*';
 let defaultJSXStringQuote = '"';
 
-const findJSXStringEndQuote = (str, quote, startQuotePos = 0) => str.indexOf(quote, startQuotePos + 1);
+const findJSXStringEndQuote = (str, quote, startQuotePos = 0) =>
+  str.indexOf(quote, startQuotePos + 1);
 
 const STR_ENTITIES_DECODE = [[/&quot;/g, '"'], [/&apos;/g, "'"]];
 
@@ -82,7 +85,8 @@ const findEvaluatedValueClosingBrace = (str, openBracePos = 0) => {
        * we will never be able to find end of this block.
        */
       return -1;
-    } if (openIndex > 0 && openIndex < closeIndex) {
+    }
+    if (openIndex > 0 && openIndex < closeIndex) {
       opensCount++;
       lastIndex = openIndex;
     } else {
@@ -272,11 +276,14 @@ const getNameImportFromCode = (code, component) => {
    * 7 -- Quote type used to wrap package name
    * 8 -- Package name or file path
    */
-  const [,
+  const [
+    ,
     importString,
-    preNameString,,
+    preNameString,
+    ,
     originalNameOuter,
     originalNameInner,
+    ,
     quoteType,
     packagePath,
   ] = code.match(rgx) || [];
@@ -323,15 +330,16 @@ const makeComponentImportModule = (code, component) => {
   return generateModuleCode(`import ${importString} from "${packagePath}"`, component);
 };
 
-const propTypesToList = (meta) => Object.keys(meta)
-  .filter((name) => !!meta[name])
-  .map((name) => {
-    const augmented = { name, ...meta[name] };
-    meta[name] = augmented;
+const propTypesToList = (meta) =>
+  Object.keys(meta)
+    .filter((name) => !!meta[name])
+    .map((name) => {
+      const augmented = { name, ...meta[name] };
+      meta[name] = augmented;
 
-    return augmented;
-  })
-  .sort(({ name: a }, { name: b }) => (a < b ? -1 : 1));
+      return augmented;
+    })
+    .sort(({ name: a }, { name: b }) => (a < b ? -1 : 1));
 
 /*
       {
@@ -371,19 +379,20 @@ const generatePropType = ({ name, value: rawValue, valueIdentifier }) => {
   return { name, type, required: false, primitive: false };
 };
 
-const assignTypesToProps = ({ props }, specs) => Object.keys(props).forEach((key) => {
-  const prop = props[key];
-  const { name } = prop;
-  let spec;
+const assignTypesToProps = ({ props }, specs) =>
+  Object.keys(props).forEach((key) => {
+    const prop = props[key];
+    const { name } = prop;
+    let spec;
 
-  if (name) {
-    spec = specs[name] || generatePropType(prop);
-  } else {
-    spec = {};
-  }
+    if (name) {
+      spec = specs[name] || generatePropType(prop);
+    } else {
+      spec = {};
+    }
 
-  prop.type = spec;
-});
+    prop.type = spec;
+  });
 
 /* ------ Do everything at once:
   1. Parse JSX tag
@@ -454,6 +463,13 @@ const styles = StyleSheet.create({
     color: TEXT_DISABLED_COLOR,
   },
   fullFlex: { flex: 1 },
+  collapsed: {
+    height: ELEMENT_MIN_SIZE,
+    borderWidth: 1,
+    borderRadius: 5,
+    borderColor: DISABLED_BORDER_COLOR,
+    paddingHorizontal: 5,
+  },
 });
 
 const getClosingSymbol = (openSymbol) => {
@@ -469,7 +485,8 @@ const getClosingSymbol = (openSymbol) => {
   }
 };
 
-const PropRequired = ({ required }) => (required ? <Text style={styles.requiredText}>*</Text> : null);
+const PropRequired = ({ required }) =>
+  required ? <Text style={styles.requiredText}>*</Text> : null;
 
 const renderPropType = ({ type, value, required } = {}) => {
   const { TYPES } = PropTypes;
@@ -514,9 +531,7 @@ const PropName = ({ name, type }) => {
 
   return (
     <ActiveText style={styles.fullFlex}>
-      {name}
-      {' '}
-      {type ? <PropType spec={type} /> : null}
+      {name} {type ? <PropType spec={type} /> : null}
     </ActiveText>
   );
 };
@@ -534,12 +549,14 @@ const ValueContainer = ({ valueIdentifier, index, onChange, children }) => (
           marginHorizontal: 4,
         }}
         label={valueIdentifier}
-        onPress={() => onChange(index, {
-          valueIdentifier:
+        onPress={() =>
+          onChange(index, {
+            valueIdentifier:
               valueIdentifier === COMPUTABLE_VALUE_IDENTIFIER
                 ? defaultJSXStringQuote
                 : COMPUTABLE_VALUE_IDENTIFIER,
-        })}
+          })
+        }
       />
     ) : (
       <Text
@@ -577,7 +594,7 @@ const ExpandableValue = ({ index, valueIdentifier, value, onChange }) => {
   ) : (
     <ValueContainer valueIdentifier={valueIdentifier}>
       <TouchableHighlight onPress={() => setExpanded(true)} style={styles.fullFlex}>
-        <Small numberOfLines={1} ellipsizeMode="tail">
+        <Small numberOfLines={1} ellipsizeMode="tail" style={styles.collapsed}>
           {value}
         </Small>
       </TouchableHighlight>
@@ -616,10 +633,12 @@ const renderMoveDownButton = (onPress, hidden) => {
   );
 };
 
-const memoPropRow = (PropRowComponent) => memo(
-  PropRowComponent,
-  ({ prop: pa, index: ia, first: fa, last: la }, { prop: pb, index: ib, first: fb, last: lb }) => pa === pb && ia === ib && fa === fb && la === lb,
-);
+const memoPropRow = (PropRowComponent) =>
+  memo(
+    PropRowComponent,
+    ({ prop: pa, index: ia, first: fa, last: la }, { prop: pb, index: ib, first: fb, last: lb }) =>
+      pa === pb && ia === ib && fa === fb && la === lb,
+  );
 
 const PropRow = ({
   prop,
@@ -738,13 +757,13 @@ const BoolPropRow = memoPropRow((props) => {
   return (
     <PropRow
       {...props}
-      buttons={(
+      buttons={
         <CheckBoxButton
           selected={value === 'true'}
           onPress={() => onChange(index, { value: String(!(value === 'true')) })}
           style={{ alignSelf: 'flex-end' }}
         />
-)}
+      }
     />
   );
 });
@@ -1074,29 +1093,30 @@ const getValueIdentifierForType = ({ type, value }) => {
   }
 };
 
-const buildPropsStringFrom = (list) => list.reduce(
-  (props, { changed, str, type: { type }, preSpaces, name, valueIdentifier, value }) => {
-    if (!changed) {
-      return `${props}${str}`;
-    }
+const buildPropsStringFrom = (list) =>
+  list.reduce(
+    (props, { changed, str, type: { type }, preSpaces, name, valueIdentifier, value }) => {
+      if (!changed) {
+        return `${props}${str}`;
+      }
 
-    switch (type) {
-      case TYPES.bool:
-        return `${props}${preSpaces}${name}${value === 'true' ? '' : '={false}'}`;
+      switch (type) {
+        case TYPES.bool:
+          return `${props}${preSpaces}${name}${value === 'true' ? '' : '={false}'}`;
 
-      case undefined: // spread in props
-        return `${props}${preSpaces}${valueIdentifier}${value}${getClosingSymbol(
-          valueIdentifier,
-        )}`;
+        case undefined: // spread in props
+          return `${props}${preSpaces}${valueIdentifier}${value}${getClosingSymbol(
+            valueIdentifier,
+          )}`;
 
-      default:
-        return `${props}${preSpaces}${name}=${valueIdentifier}${value}${getClosingSymbol(
-          valueIdentifier,
-        )}`;
-    }
-  },
-  '',
-);
+        default:
+          return `${props}${preSpaces}${name}=${valueIdentifier}${value}${getClosingSymbol(
+            valueIdentifier,
+          )}`;
+      }
+    },
+    '',
+  );
 
 class PropTypePropsToolView extends Component {
   constructor(props) {
@@ -1154,10 +1174,8 @@ class PropTypePropsToolView extends Component {
     return (
       <>
         <SmallHeader spaceAbove>
-&lt;
-          {name}
-          {' '}
-/&gt; props
+          &lt;
+          {name} /&gt; props
         </SmallHeader>
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 200 }}>
           {propTypesList && propTypesList.length ? (

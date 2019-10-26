@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { View, StyleSheet, Modal, KeyboardAvoidingView } from 'react-native';
 import AsyncStorage from '@react-native-community/async-storage';
 import AntDesign from 'react-native-vector-icons/AntDesign';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import {
   Screen,
@@ -36,13 +37,152 @@ const styles = StyleSheet.create({
   colorButton: { margin: 5 },
 });
 
-const DEFAULT_PARAMS = { searchStr: '', replaceStr: '', caseInsensitive: false, useRegExp: false };
+const DEFAULT_PARAMS = { searchStr: '', replaceStr: '', caseSensitive: false, useRegExp: false };
 let currentParams;
 
-const SearchAndReplaceScreen = ({ initParams = DEFAULT_PARAMS, close, onSearch, onReplace }) => {
+const SearchControls = ({
+  searchStr,
+  caseSensitive,
+  useRegExp,
+  onSearchStrChange,
+  onCaseSensitiveToggle,
+  onUseRegExpToggle,
+  onFindNext,
+  onFindPrevious,
+  disabled,
+}) => (
+  <>
+    <TextInput
+      placeholder="Find what"
+      value={searchStr}
+      onChangeText={onSearchStrChange}
+      style={styles.fullFlex}
+    />
+    <IconButton
+      iconRenderer={() => <ActiveText>. *</ActiveText>}
+      selected={caseSensitive}
+      onPress={onCaseSensitiveToggle}
+      style={{ marginHorizontal: 5 }}
+    />
+    <IconButton
+      iconRenderer={() => <ActiveText>aA</ActiveText>}
+      selected={useRegExp}
+      onPress={onUseRegExpToggle}
+    />
+    <IconButton
+      iconRenderer={() => <AntDesign name="arrowdown" color={TEXT_ACTIVE_COLOR} size={20} />}
+      style={{ marginHorizontal: 5 }}
+      onPress={onFindNext}
+      disabled={disabled}
+    />
+    <IconButton
+      iconRenderer={() => <AntDesign name="arrowup" color={TEXT_ACTIVE_COLOR} size={20} />}
+      onPress={onFindPrevious}
+      disabled={disabled}
+    />
+  </>
+);
+
+const ReplaceControls = ({
+  replaceStr,
+  onReplaceStrStrChange,
+  onReplaceNext,
+  onReplaceAll,
+  disabled,
+}) => (
+  <>
+    <TextInput
+      placeholder="Replace with"
+      value={replaceStr}
+      onChangeText={onReplaceStrStrChange}
+      style={styles.fullFlex}
+    />
+    <IconButton
+      iconRenderer={() => (
+        <MaterialCommunityIcons name="play" color={TEXT_ACTIVE_COLOR} size={20} />
+      )}
+      style={{ marginHorizontal: 5 }}
+      onPress={onReplaceNext}
+      disabled={disabled}
+    />
+    <IconButton
+      iconRenderer={() => (
+        <MaterialCommunityIcons name="fast-forward" color={TEXT_ACTIVE_COLOR} size={20} />
+      )}
+      onPress={onReplaceAll}
+      disabled={disabled}
+    />
+  </>
+);
+
+const CloseButton = ({ onPress }) => (
+  <IconButton
+    iconRenderer={() => <AntDesign name="close" color={TEXT_ACTIVE_COLOR} size={20} />}
+    style={{ marginRight: 5 }}
+    onPress={onPress}
+  />
+);
+
+export const SearchScreen = ({
+  initParams = DEFAULT_PARAMS,
+  close,
+  onFindNext,
+  onFindPrevious,
+  onReplace,
+}) => {
+  const [searchStr, setSearchStr] = useState(initParams.searchStr);
+  const [caseSensitive, setCaseSensitivity] = useState(initParams.caseSensitive);
+  const [useRegExp, setUseRegExp] = useState(initParams.useRegExp);
+
+  const disabled = !searchStr;
+
+  return (
+    <Area contentContainerStyle={{ height: 48, padding: 5 }}>
+      <HGroup noHorizontalPadding>
+        <CloseButton onPress={close} onCaseSensitivityToggle />
+        <SearchControls
+          searchStr={searchStr}
+          caseSensitive={caseSensitive}
+          useRegExp={useRegExp}
+          onSearchStrChange={setSearchStr}
+          onCaseSensitiveToggle={() => setCaseSensitivity(!caseSensitive)}
+          onUseRegExpToggle={() => setUseRegExp(!useRegExp)}
+          onFindNext={onFindNext}
+          onFindPrevious={onFindPrevious}
+          disabled={disabled}
+        />
+      </HGroup>
+    </Area>
+  );
+};
+
+const ModalWrap = ({ children, ...props }) => (
+  <Modal transparent {...props}>
+    {children}
+  </Modal>
+);
+
+const SearchModal = withHostedModal(
+  SearchScreen,
+  ['onSearch', 'onReplace'],
+  undefined,
+  undefined,
+  ModalWrap,
+);
+
+export const { renderer: searchScreenRenderer } = SearchModal;
+
+const SearchAndReplaceScreen = ({
+  initParams = DEFAULT_PARAMS,
+  close,
+  onFindNext,
+  onFindPrevious,
+  onReplaceNext,
+  onReplaceAll,
+}) => {
   const [searchStr, setSearchStr] = useState(initParams.searchStr);
   const [replaceStr, setReplaceStr] = useState(initParams.replaceStr);
-  const [caseInsensitive, setCaseSensitivity] = useState(initParams.caseInsensitive);
+  const [caseSensitive, setCaseSensitivity] = useState(initParams.caseSensitive);
   const [useRegExp, setUseRegExp] = useState(initParams.useRegExp);
 
   const disabled = !searchStr;
@@ -50,73 +190,38 @@ const SearchAndReplaceScreen = ({ initParams = DEFAULT_PARAMS, close, onSearch, 
   return (
     <Area contentContainerStyle={{ height: 90, padding: 5 }}>
       <HGroup noHorizontalPadding>
-        <TextInput
-          placeholder="Find what"
-          value={searchStr}
-          onChangeText={setSearchStr}
-          style={styles.fullFlex}
-        />
-        <IconButton
-          iconRenderer={() => <ActiveText>. *</ActiveText>}
-          style={{ marginHorizontal: 5 }}
-        />
-        <IconButton iconRenderer={() => <ActiveText>aA</ActiveText>} selected />
-        <IconButton
-          iconRenderer={() => <AntDesign name="arrowdown" color={TEXT_ACTIVE_COLOR} size={20} />}
-          style={{ marginHorizontal: 5 }}
-          disabled={disabled}
-        />
-        <IconButton
-          iconRenderer={() => <AntDesign name="arrowup" color={TEXT_ACTIVE_COLOR} size={20} />}
+        <SearchControls
+          searchStr={searchStr}
+          caseSensitive={caseSensitive}
+          useRegExp={useRegExp}
+          onSearchStrChange={setSearchStr}
+          onCaseSensitiveToggle={() => setCaseSensitivity(!caseSensitive)}
+          onUseRegExpToggle={() => setUseRegExp(!useRegExp)}
+          onFindNext={onFindNext}
+          onFindPrevious={onFindPrevious}
           disabled={disabled}
         />
       </HGroup>
       <HGroup noPadding>
-        <TextInput
-          placeholder="Replace with"
-          value={replaceStr}
-          onChangeText={setReplaceStr}
-          style={styles.fullFlex}
-        />
-        <TextButton
-          label="Replace"
-          onPress={() => onSearch({ searchStr, caseInsensitive, useRegExp })}
-          style={{ marginHorizontal: 5 }}
+        <CloseButton onPress={close} />
+        <ReplaceControls
+          replaceStr={replaceStr}
+          onReplaceStrStrChange={setReplaceStr}
+          onReplaceNext={onReplaceNext}
+          onReplaceAll={onReplaceAll}
           disabled={disabled}
-        />
-        <IconButton
-          iconRenderer={() => <AntDesign name="close" color={TEXT_ACTIVE_COLOR} size={20} />}
-          onPress={close}
         />
       </HGroup>
     </Area>
   );
 };
 
-const SearchModal = ({ children, ...props }) => (
-  <Modal transparent {...props}>
-    <KeyboardAvoidingView
-      {...props}
-      style={{
-        flex: 1,
-        alignItems: 'stretch',
-        justifyContent: 'flex-end',
-        borderWidth: 4,
-        borderColor: 0xffff00ff,
-      }}
-      enabled
-    >
-      {children}
-    </KeyboardAvoidingView>
-  </Modal>
-);
-
 const SearchAndReplaceModal = withHostedModal(
   SearchAndReplaceScreen,
   ['onSearch', 'onReplace'],
   undefined,
   undefined,
-  SearchModal,
+  ModalWrap,
 );
 
 export const { renderer: searchAndReplaceScreenRenderer } = SearchAndReplaceModal;
@@ -128,6 +233,14 @@ export const { renderer: searchAndReplaceScreenRenderer } = SearchAndReplaceModa
   and for replace it should have buttons replace, replace all.
   When navigating between found entries, it selects entry and scrolls to it.
 */
+/*
+chevron-right
+chevron-triple-right
+play
+fast-forward
+done
+done-all
+*/
 
 const tool = {
   iconRenderer: () => (
@@ -136,14 +249,33 @@ const tool = {
   pressHandler: async ({ closeToolsPanel, showModal, editorApi }) => {
     closeToolsPanel();
     showModal({
+      renderer: searchScreenRenderer,
+      props: {
+        onFindNext: (params) => {
+          console.log(params);
+        },
+        onFindPrevious: (params) => {
+          console.log(params);
+        },
+      },
+    });
+  },
+  longPressHandler: async ({ closeToolsPanel, showModal, editorApi }) => {
+    closeToolsPanel();
+    showModal({
       renderer: searchAndReplaceScreenRenderer,
       props: {
-        onSearch: (params) => {
-          currentParams = params;
+        onFindNext: (params) => {
+          console.log(params);
         },
-        onReplace: (params) => {
-          currentParams = undefined;
-          // replace stuff
+        onFindPrevious: (params) => {
+          console.log(params);
+        },
+        onReplaceNext: (params) => {
+          console.log(params);
+        },
+        onReplaceAll: (params) => {
+          console.log(params);
         },
       },
     });

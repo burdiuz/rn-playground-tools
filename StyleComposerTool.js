@@ -334,11 +334,12 @@ const STYLE_SECTIONS = [
 ];
 
 const STYLE_PROP_MAP = STYLE_SECTIONS.reduce(
-  (map, { props }) => props.reduce((result, prop) => {
-    result[prop.name] = prop;
+  (map, { props }) =>
+    props.reduce((result, prop) => {
+      result[prop.name] = prop;
 
-    return result;
-  }, map),
+      return result;
+    }, map),
   {},
 );
 
@@ -354,7 +355,8 @@ const isQuote = (str, index = 0) => '\'"`'.includes(str.charAt(index));
 
 const isBlockStart = (str, index = 0) => '({['.includes(str.charAt(index));
 
-const isCommentStart = (str, index = 0) => str.charAt(index) === '/' && '/*'.includes(str.charAt(index + 1));
+const isCommentStart = (str, index = 0) =>
+  str.charAt(index) === '/' && '/*'.includes(str.charAt(index + 1));
 
 const isSkippable = (str, index = 0) => {
   const char = str.charAt(index);
@@ -711,6 +713,7 @@ const parseStyleObject = (str, cursorIndex) => {
     }
 
     nextIndex = skipToValueEnd(str, lastIndex);
+    char = str.charAt(nextIndex);
 
     property.value = trimSpacesAndComments(str.substring(lastIndex, nextIndex));
 
@@ -760,7 +763,7 @@ const parseStyleObject = (str, cursorIndex) => {
 const stringQuoteWrap = (str) => `${defaultStringQuote}${str}${defaultStringQuote}`;
 
 const stringifyValue = (name, value) => {
-  const { type } = STYLE_PROP_MAP[name];
+  const { type } = STYLE_PROP_MAP[name] || {};
 
   switch (type) {
     case NUMBER_TYPE:
@@ -774,19 +777,21 @@ const stringifyValue = (name, value) => {
   }
 };
 
-const combileStyleObjectPart = ({ str, preSpaces, preComments, value, postComments, postSpaces }) => `${preSpaces}${preComments}${value}${postSpaces}${postComments}`;
+const combileStyleObjectPart = ({ str, preSpaces, preComments, value, postComments, postSpaces }) =>
+  `${preSpaces}${preComments}${value}${postSpaces}${postComments}`;
 
-const combileStyleObject = (properties) => properties.reduce((str, { label, value }) => {
-  let result = `${str}${combileStyleObjectPart(label)}`;
+const combileStyleObject = (properties) =>
+  properties.reduce((str, { label, value }) => {
+    let result = `${str}${combileStyleObjectPart(label)}`;
 
-  if (value) {
-    result = `${result}:${combileStyleObjectPart(value)},`;
-  } else if (label.value) {
-    result = `${result},`;
-  }
+    if (value) {
+      result = `${result}:${combileStyleObjectPart(value)},`;
+    } else if (label.value) {
+      result = `${result},`;
+    }
 
-  return result;
-}, '');
+    return result;
+  }, '');
 
 /*
   Here is the final step of te tool session, so we don't care about keeping data unchanged,
@@ -965,7 +970,8 @@ const StyleBoolValue = ({ value, enabled, prop: { name }, onChange }) => (
 
 const ShowColorPaletteButton = connect(
   (state) => {
-    const { iconRenderer, ColorPaletteToolModal: { renderer: colorPaletteModalRenderer } = {} } = getToolByFileName(state, { fileName: COLOR_PALETTE_TOOL_FILE_NAME }) || {};
+    const { iconRenderer, ColorPaletteToolModal: { renderer: colorPaletteModalRenderer } = {} } =
+      getToolByFileName(state, { fileName: COLOR_PALETTE_TOOL_FILE_NAME }) || {};
 
     return { iconRenderer, colorPaletteModalRenderer };
   },
@@ -976,18 +982,19 @@ const ShowColorPaletteButton = connect(
       return undefined;
     }
 
-    return (currentValue) => new Promise((resolve, reject) => {
-      showModal({
-        renderer: colorPaletteModalRenderer,
-        props: {
-          colorType: '0x',
-          initialColor: currentValue ? parseInt(currentValue, 16) : 0x000000ff,
-          submitTitle: ' Apply ',
-          onCancel: reject,
-          onSubmit: resolve,
-        },
+    return (currentValue) =>
+      new Promise((resolve, reject) => {
+        showModal({
+          renderer: colorPaletteModalRenderer,
+          props: {
+            colorType: '0x',
+            initialColor: currentValue ? parseInt(currentValue, 16) : 0x000000ff,
+            submitTitle: ' Apply ',
+            onCancel: reject,
+            onSubmit: resolve,
+          },
+        });
       });
-    });
   }, [colorPaletteModalRenderer, showModal]);
 
   const handlePress = useMemo(
@@ -1116,91 +1123,99 @@ class StyleComposerToolView extends Component {
     };
   }
 
-  handleChange = (name, value) => this.setState(({ values }) => {
-    const { [name]: prevData = { enabled: true } } = values;
+  handleChange = (name, value) =>
+    this.setState(({ values }) => {
+      const { [name]: prevData = { enabled: true } } = values;
 
-    return {
-      values: {
-        ...values,
-        [name]: {
-          ...prevData,
-          changed: true,
-          value,
+      return {
+        values: {
+          ...values,
+          [name]: {
+            ...prevData,
+            changed: true,
+            value,
+          },
         },
-      },
-    };
-  });
+      };
+    });
 
   handleUpdate = () => {
     const { onSubmit } = this.props;
 
-    onSubmit(onSubmit(this.state.values));
+    onSubmit(this.state.values);
   };
 
-  handleToggleSections = () => this.setState(({ sections, values, sectionsEnabled }) => {
-    const enabled = !sectionsEnabled;
-    const names = {};
+  handleToggleSections = () =>
+    this.setState(({ sections, values, sectionsEnabled }) => {
+      const enabled = !sectionsEnabled;
+      const names = {};
 
-    return {
-      sectionsEnabled: enabled,
-      list: enabled
-        ? []
-        : sections
-          .reduce(
-            (list, section) => [
-              ...list,
-              ...validateSectionData(
-                { ...section, expanded: true, undefinedVisible: false },
-                values,
-              ).data,
-            ],
-            [],
-          )
-          .filter(({ name }) => {
-            if (names[name] === true) {
-              return false;
-            }
+      return {
+        sectionsEnabled: enabled,
+        list: enabled
+          ? []
+          : sections
+              .reduce(
+                (list, section) => [
+                  ...list,
+                  ...validateSectionData(
+                    { ...section, expanded: true, undefinedVisible: false },
+                    values,
+                  ).data,
+                ],
+                [],
+              )
+              .filter(({ name }) => {
+                if (names[name] === true) {
+                  return false;
+                }
 
-            names[name] = true;
+                names[name] = true;
 
-            return true;
-          })
-          .sort(({ name: a }, { name: b }) => (a < b ? -1 : 1)),
-    };
-  });
+                return true;
+              })
+              .sort(({ name: a }, { name: b }) => (a < b ? -1 : 1)),
+      };
+    });
 
-  handleCollapseAll = () => this.setState(({ sections, values }) => ({
-    sections: sections.map((section) => (section.expanded ? validateSectionData({ ...section, expanded: false }, values) : section),
-    ),
-  }));
+  handleCollapseAll = () =>
+    this.setState(({ sections, values }) => ({
+      sections: sections.map((section) =>
+        section.expanded ? validateSectionData({ ...section, expanded: false }, values) : section,
+      ),
+    }));
 
-  handleExpandAll = () => this.setState(({ sections, values }) => ({
-    sections: sections.map((section) => (section.expanded ? section : validateSectionData({ ...section, expanded: true }, values)),
-    ),
-  }));
+  handleExpandAll = () =>
+    this.setState(({ sections, values }) => ({
+      sections: sections.map((section) =>
+        section.expanded ? section : validateSectionData({ ...section, expanded: true }, values),
+      ),
+    }));
 
-  toggleSectionExpanded = (section) => this.setState(({ sections, values }) => {
-    const { expanded } = section;
-    const sectionIndex = sections.indexOf(section);
-    const newSections = [...sections];
+  toggleSectionExpanded = (section) =>
+    this.setState(({ sections, values }) => {
+      const { expanded } = section;
+      const sectionIndex = sections.indexOf(section);
+      const newSections = [...sections];
 
-    newSections[sectionIndex] = validateSectionData({ ...section, expanded: !expanded }, values);
+      newSections[sectionIndex] = validateSectionData({ ...section, expanded: !expanded }, values);
 
-    return { sections: newSections };
-  });
+      return { sections: newSections };
+    });
 
-  toggleUndefinedVisible = (section) => this.setState(({ sections, values }) => {
-    const { undefinedVisible } = section;
-    const sectionIndex = sections.indexOf(section);
-    const newSections = [...sections];
+  toggleUndefinedVisible = (section) =>
+    this.setState(({ sections, values }) => {
+      const { undefinedVisible } = section;
+      const sectionIndex = sections.indexOf(section);
+      const newSections = [...sections];
 
-    newSections[sectionIndex] = validateSectionData(
-      { ...section, undefinedVisible: !undefinedVisible },
-      values,
-    );
+      newSections[sectionIndex] = validateSectionData(
+        { ...section, undefinedVisible: !undefinedVisible },
+        values,
+      );
 
-    return { sections: newSections };
-  });
+      return { sections: newSections };
+    });
 
   renderSectionHeader = ({ section }) => {
     const { label, expanded, undefinedVisible, data } = section;
@@ -1346,28 +1361,29 @@ const isQuotedString = (str) => {
   return isQuote(start) && start === str.charAt(str.length - 1);
 };
 
-const getValidStyleProps = ({ properties }) => properties.reduce((result, { label, value }) => {
-  if (!isStyleProp(label.value)) {
-    return result;
-  }
+const getValidStyleProps = ({ properties }) =>
+  properties.reduce((result, { label, value }) => {
+    if (!isStyleProp(label.value)) {
+      return result;
+    }
 
-  let styleValue = value ? value.value : label.value;
-  const enabled = !!value;
+    let styleValue = value ? value.value : label.value;
+    const enabled = !!value;
 
-  if (isQuotedString(styleValue)) {
-    defaultStringQuote = styleValue.charAt();
-    styleValue = styleValue.substring(1, styleValue.length - 1);
-  }
+    if (isQuotedString(styleValue)) {
+      defaultStringQuote = styleValue.charAt();
+      styleValue = styleValue.substring(1, styleValue.length - 1);
+    }
 
-  return {
-    ...result,
-    [label.value]: {
-      value: styleValue,
-      changed: false,
-      enabled,
-    },
-  };
-}, {});
+    return {
+      ...result,
+      [label.value]: {
+        value: styleValue,
+        changed: false,
+        enabled,
+      },
+    };
+  }, {});
 
 const loadStyleObjectProps = async (editorApi) => {
   const content = await editorApi.getValue();
