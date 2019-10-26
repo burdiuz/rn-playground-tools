@@ -27,14 +27,15 @@ import {
   ActiveText,
 } from '@actualwave/react-native-kingnare-style';
 
+const SEARCH_MODAL_HEIGHT = 48;
+const REPLACE_MODAL_HEIGHT = 90;
+
 const styles = StyleSheet.create({
-  sliderLabel: { width: 60, textAlign: 'right', marginRight: 10, marginTop: 4 },
   fullFlex: { flex: 1 },
-  rowWrap: { flexDirection: 'row', flexWrap: 'wrap' },
-  input: { width: 40, marginVertical: 10 },
-  inputLabel: { marginLeft: 10, marginRight: 5, marginVertical: 14 },
-  inputsRow: { paddingBottom: 0 },
-  colorButton: { margin: 5 },
+  marginH: { marginHorizontal: 5 },
+  marginR: { marginRight: 5 },
+  searchScreen: { height: SEARCH_MODAL_HEIGHT, padding: 5 },
+  replaceScreen: { height: REPLACE_MODAL_HEIGHT, padding: 5 },
 });
 
 const DEFAULT_PARAMS = { searchStr: '', replaceStr: '', caseSensitive: false, useRegExp: false };
@@ -62,7 +63,7 @@ const SearchControls = ({
       iconRenderer={() => <ActiveText>. *</ActiveText>}
       selected={caseSensitive}
       onPress={onCaseSensitiveToggle}
-      style={{ marginHorizontal: 5 }}
+      style={styles.marginH}
     />
     <IconButton
       iconRenderer={() => <ActiveText>aA</ActiveText>}
@@ -71,7 +72,7 @@ const SearchControls = ({
     />
     <IconButton
       iconRenderer={() => <AntDesign name="arrowdown" color={TEXT_ACTIVE_COLOR} size={20} />}
-      style={{ marginHorizontal: 5 }}
+      style={styles.marginH}
       onPress={onFindNext}
       disabled={disabled}
     />
@@ -101,7 +102,7 @@ const ReplaceControls = ({
       iconRenderer={() => (
         <MaterialCommunityIcons name="play" color={TEXT_ACTIVE_COLOR} size={20} />
       )}
-      style={{ marginHorizontal: 5 }}
+      style={styles.marginH}
       onPress={onReplaceNext}
       disabled={disabled}
     />
@@ -118,7 +119,7 @@ const ReplaceControls = ({
 const CloseButton = ({ onPress }) => (
   <IconButton
     iconRenderer={() => <AntDesign name="close" color={TEXT_ACTIVE_COLOR} size={20} />}
-    style={{ marginRight: 5 }}
+    style={styles.marginR}
     onPress={onPress}
   />
 );
@@ -137,7 +138,7 @@ export const SearchScreen = ({
   const disabled = !searchStr;
 
   return (
-    <Area contentContainerStyle={{ height: 48, padding: 5 }}>
+    <Area contentContainerStyle={styles.searchScreen}>
       <HGroup noHorizontalPadding>
         <CloseButton onPress={close} onCaseSensitivityToggle />
         <SearchControls
@@ -147,8 +148,8 @@ export const SearchScreen = ({
           onSearchStrChange={setSearchStr}
           onCaseSensitiveToggle={() => setCaseSensitivity(!caseSensitive)}
           onUseRegExpToggle={() => setUseRegExp(!useRegExp)}
-          onFindNext={onFindNext}
-          onFindPrevious={onFindPrevious}
+          onFindNext={() => onFindNext({ searchStr, caseSensitive, useRegExp })}
+          onFindPrevious={() => onFindPrevious({ searchStr, caseSensitive, useRegExp })}
           disabled={disabled}
         />
       </HGroup>
@@ -157,18 +158,20 @@ export const SearchScreen = ({
 };
 
 const ModalWrap = ({ children, ...props }) => (
-  <Modal transparent {...props}>
+  <View
+    style={{
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      zIndex: 10,
+    }}
+  >
     {children}
-  </Modal>
+  </View>
 );
 
-const SearchModal = withHostedModal(
-  SearchScreen,
-  ['onSearch', 'onReplace'],
-  undefined,
-  undefined,
-  ModalWrap,
-);
+const SearchModal = withHostedModal(SearchScreen, [], undefined, undefined, ModalWrap);
 
 export const { renderer: searchScreenRenderer } = SearchModal;
 
@@ -188,7 +191,7 @@ const SearchAndReplaceScreen = ({
   const disabled = !searchStr;
 
   return (
-    <Area contentContainerStyle={{ height: 90, padding: 5 }}>
+    <Area contentContainerStyle={styles.replaceScreen}>
       <HGroup noHorizontalPadding>
         <SearchControls
           searchStr={searchStr}
@@ -197,8 +200,8 @@ const SearchAndReplaceScreen = ({
           onSearchStrChange={setSearchStr}
           onCaseSensitiveToggle={() => setCaseSensitivity(!caseSensitive)}
           onUseRegExpToggle={() => setUseRegExp(!useRegExp)}
-          onFindNext={onFindNext}
-          onFindPrevious={onFindPrevious}
+          onFindNext={() => onFindNext({ searchStr, caseSensitive, useRegExp })}
+          onFindPrevious={() => onFindPrevious({ searchStr, caseSensitive, useRegExp })}
           disabled={disabled}
         />
       </HGroup>
@@ -207,8 +210,8 @@ const SearchAndReplaceScreen = ({
         <ReplaceControls
           replaceStr={replaceStr}
           onReplaceStrStrChange={setReplaceStr}
-          onReplaceNext={onReplaceNext}
-          onReplaceAll={onReplaceAll}
+          onReplaceNext={() => onReplaceNext({ searchStr, caseSensitive, useRegExp, replaceStr })}
+          onReplaceAll={() => onReplaceAll({ searchStr, caseSensitive, useRegExp, replaceStr })}
           disabled={disabled}
         />
       </HGroup>
@@ -218,7 +221,7 @@ const SearchAndReplaceScreen = ({
 
 const SearchAndReplaceModal = withHostedModal(
   SearchAndReplaceScreen,
-  ['onSearch', 'onReplace'],
+  [],
   undefined,
   undefined,
   ModalWrap,
@@ -242,43 +245,135 @@ done
 done-all
 */
 
+const createSetWebViewTopSpacing = (editorApi) => (spacing) => {
+  let padding = spacing;
+
+  if (spacing === undefined) {
+    padding = modalHeight;
+  } else {
+    modalHeight = spacing;
+  }
+
+  editorApi.injectJavaScript(`((padding) => {
+  const { visualViewport:vw } = window;
+
+  const handler = () => document.body.style.setProperty(
+    'padding-top',
+    \`\${(padding / ((vw || {}).scale || 1)) >> 0}px\`
+  );
+
+  if (vw) {
+    if (window.__paddingUpdateListener) {
+      vw.removeEventListener('resize', window.__paddingUpdateListener);
+    }
+
+    vw.addEventListener('resize', handler);
+    window.__paddingUpdateListener = handler;
+  }
+
+  handler();
+})(${padding})`);
+};
+
+const createRemoveWebViewTopSpacing = (editorApi) => () => {
+  modalHeight = 0;
+  editorApi.injectJavaScript(`(() => {
+  const { visualViewport:vw } = window;
+
+  if (vw && window.__paddingUpdateListener) {
+    vw.removeEventListener('resize', window.__paddingUpdateListener);
+    delete window.__paddingUpdateListener;
+  }
+
+  document.body.style.removeProperty('padding-top');
+})()`);
+};
+
+const findNext = async ({}, editorApi) => {};
+
+const findPrevious = async ({}, editorApi) => {};
+
+const replaceNext = async ({}, editorApi) => {};
+
+const replaceAll = async ({}, editorApi) => {};
+
+// We store modalPromise because this Promise instance has .id field
+// which contains reference to modal.
+let modalPromise = null;
+let modalHeight = 0;
+
+let setWebViewTopSpacing = () => {
+  throw new Error('SearchAndReplaceTool:setWebViewTopSpacing() is not set.');
+};
+let removeWebViewTopSpacing = () => {
+  throw new Error('SearchAndReplaceTool:removeWebViewTopSpacing() is not set.');
+};
+
+// This will be function if search once modal called.
+let hideModalCallback = null;
+
+const initFns = (editorApi, hideModal) => {
+  setWebViewTopSpacing = createSetWebViewTopSpacing(editorApi);
+  removeWebViewTopSpacing = createRemoveWebViewTopSpacing(editorApi);
+  hideModalCallback = hideModal;
+};
+
 const tool = {
   iconRenderer: () => (
     <MaterialCommunityIcons name="find-replace" color={TEXT_ACTIVE_COLOR} size={28} />
   ),
-  pressHandler: async ({ closeToolsPanel, showModal, editorApi }) => {
+  pressHandler: async ({ closeToolsPanel, showModal, hideModal, editorApi }) => {
+    initFns(editorApi, hideModal);
+    setWebViewTopSpacing(SEARCH_MODAL_HEIGHT);
     closeToolsPanel();
-    showModal({
+
+    // add top margin /padding to give space for search modal
+
+    modalPromise = showModal({
       renderer: searchScreenRenderer,
       props: {
-        onFindNext: (params) => {
-          console.log(params);
-        },
-        onFindPrevious: (params) => {
-          console.log(params);
-        },
+        onFindNext: (params) => findNext(params, editorApi),
+        onFindPrevious: (params) => findPrevious(params, editorApi),
       },
     });
+
+    await modalPromise;
+
+    removeWebViewTopSpacing();
+    modalPromise = null;
   },
-  longPressHandler: async ({ closeToolsPanel, showModal, editorApi }) => {
+  longPressHandler: async ({ closeToolsPanel, showModal, hideModal, editorApi }) => {
+    hideModalCallback = hideModal;
+    setWebViewTopSpacing(REPLACE_MODAL_HEIGHT);
     closeToolsPanel();
-    showModal({
+
+    // add top margin /padding to give space for search modal
+
+    modalPromise = showModal({
       renderer: searchAndReplaceScreenRenderer,
       props: {
-        onFindNext: (params) => {
-          console.log(params);
-        },
-        onFindPrevious: (params) => {
-          console.log(params);
-        },
-        onReplaceNext: (params) => {
-          console.log(params);
-        },
-        onReplaceAll: (params) => {
-          console.log(params);
-        },
+        onFindNext: (params) => findNext(params, editorApi),
+        onFindPrevious: (params) => findPrevious(params, editorApi),
+        onReplaceNext: (params) => replaceNext(params, editorApi),
+        onReplaceAll: (params) => replaceAll(params, editorApi),
       },
     });
+
+    await modalPromise;
+
+    removeWebViewTopSpacing();
+    modalPromise = null;
+  },
+  onEditorClose: () => {
+    if (hideModalCallback && modalPromise) {
+      hideModalCallback(modalPromise);
+    }
+  },
+  onEditorLoad: () => {
+    setWebViewTopSpacing();
+  },
+  onEditorReady: () => {
+    setWebViewTopSpacing();
   },
 };
 
