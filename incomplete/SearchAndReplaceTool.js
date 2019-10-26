@@ -124,38 +124,88 @@ const CloseButton = ({ onPress }) => (
   />
 );
 
-export const SearchScreen = ({
+const StateWrapper = ({
   initParams = DEFAULT_PARAMS,
-  close,
   onFindNext,
   onFindPrevious,
-  onReplace,
+  onReplaceNext,
+  onReplaceAll,
+  getNumberOfOccurences,
+  children: renderer,
+  ...props
 }) => {
   const [searchStr, setSearchStr] = useState(initParams.searchStr);
+  const [replaceStr, setReplaceStr] = useState(initParams.replaceStr);
   const [caseSensitive, setCaseSensitivity] = useState(initParams.caseSensitive);
   const [useRegExp, setUseRegExp] = useState(initParams.useRegExp);
+  const [occurrences, setOccurrencesNumber] = useState(0);
+
+  useEffect(() => {
+    (async () => {
+      const number = await getNumberOfOccurences({ searchStr, caseSensitive, useRegExp });
+
+      setOccurrencesNumber(number);
+    })();
+  }, [searchStr, caseSensitive, useRegExp]);
 
   const disabled = !searchStr;
 
-  return (
-    <Area contentContainerStyle={styles.searchScreen}>
-      <HGroup noHorizontalPadding>
-        <CloseButton onPress={close} onCaseSensitivityToggle />
-        <SearchControls
-          searchStr={searchStr}
-          caseSensitive={caseSensitive}
-          useRegExp={useRegExp}
-          onSearchStrChange={setSearchStr}
-          onCaseSensitiveToggle={() => setCaseSensitivity(!caseSensitive)}
-          onUseRegExpToggle={() => setUseRegExp(!useRegExp)}
-          onFindNext={() => onFindNext({ searchStr, caseSensitive, useRegExp })}
-          onFindPrevious={() => onFindPrevious({ searchStr, caseSensitive, useRegExp })}
-          disabled={disabled}
-        />
-      </HGroup>
-    </Area>
-  );
+  return renderer({
+    ...props,
+    searchStr,
+    replaceStr,
+    caseSensitive,
+    useRegExp,
+    occurrences,
+    onSearchStrChange: setSearchStr,
+    onReplaceStrStrChange: setReplaceStr,
+    onCaseSensitiveToggle: () => setCaseSensitivity(!caseSensitive),
+    onUseRegExpToggle: () => setUseRegExp(!useRegExp),
+    onFindNext: () => onFindNext({ searchStr, caseSensitive, useRegExp }),
+    onFindPrevious: () => onFindPrevious({ searchStr, caseSensitive, useRegExp }),
+    onReplaceNext: () => onReplaceNext({ searchStr, caseSensitive, useRegExp, replaceStr }),
+    onReplaceAll: () => onReplaceAll({ searchStr, caseSensitive, useRegExp, replaceStr }),
+  });
 };
+
+StateWrapper.propTypes = {
+  children: PropTypes.func.isRequired,
+};
+
+export const SearchScreen = (props) => (
+  <StateWrapper {...props}>
+    {({
+      searchStr,
+      occurrences,
+      caseSensitive,
+      useRegExp,
+      onSearchStrChange,
+      onCaseSensitiveToggle,
+      onUseRegExpToggle,
+      onFindNext,
+      onFindPrevious,
+      disabled,
+    }) => (
+      <Area contentContainerStyle={styles.searchScreen}>
+        <HGroup noHorizontalPadding>
+          <CloseButton onPress={props.close} onCaseSensitivityToggle />
+          <SearchControls
+            searchStr={searchStr}
+            occurrences={occurrences}
+            caseSensitive={caseSensitive}
+            useRegExp={useRegExp}
+            onSearchStrChange={onSearchStrChange}
+            onCaseSensitiveToggle={onCaseSensitiveToggle}
+            onUseRegExpToggle={onUseRegExpToggle}
+            onFindNext={onFindNext}
+            onFindPrevious={onFindPrevious}
+            disabled={disabled}
+          />
+        </HGroup>
+      </Area>
+    )}
+  </StateWrapper>
+);
 
 const ModalWrap = ({ children, ...props }) => (
   <View
@@ -175,49 +225,53 @@ const SearchModal = withHostedModal(SearchScreen, [], undefined, undefined, Moda
 
 export const { renderer: searchScreenRenderer } = SearchModal;
 
-const SearchAndReplaceScreen = ({
-  initParams = DEFAULT_PARAMS,
-  close,
-  onFindNext,
-  onFindPrevious,
-  onReplaceNext,
-  onReplaceAll,
-}) => {
-  const [searchStr, setSearchStr] = useState(initParams.searchStr);
-  const [replaceStr, setReplaceStr] = useState(initParams.replaceStr);
-  const [caseSensitive, setCaseSensitivity] = useState(initParams.caseSensitive);
-  const [useRegExp, setUseRegExp] = useState(initParams.useRegExp);
-
-  const disabled = !searchStr;
-
-  return (
-    <Area contentContainerStyle={styles.replaceScreen}>
-      <HGroup noHorizontalPadding>
-        <SearchControls
-          searchStr={searchStr}
-          caseSensitive={caseSensitive}
-          useRegExp={useRegExp}
-          onSearchStrChange={setSearchStr}
-          onCaseSensitiveToggle={() => setCaseSensitivity(!caseSensitive)}
-          onUseRegExpToggle={() => setUseRegExp(!useRegExp)}
-          onFindNext={() => onFindNext({ searchStr, caseSensitive, useRegExp })}
-          onFindPrevious={() => onFindPrevious({ searchStr, caseSensitive, useRegExp })}
-          disabled={disabled}
-        />
-      </HGroup>
-      <HGroup noPadding>
-        <CloseButton onPress={close} />
-        <ReplaceControls
-          replaceStr={replaceStr}
-          onReplaceStrStrChange={setReplaceStr}
-          onReplaceNext={() => onReplaceNext({ searchStr, caseSensitive, useRegExp, replaceStr })}
-          onReplaceAll={() => onReplaceAll({ searchStr, caseSensitive, useRegExp, replaceStr })}
-          disabled={disabled}
-        />
-      </HGroup>
-    </Area>
-  );
-};
+const SearchAndReplaceScreen = (props) => (
+  <StateWrapper {...props}>
+    {({
+      searchStr,
+      replaceStr,
+      occurrences,
+      caseSensitive,
+      useRegExp,
+      onSearchStrChange,
+      onReplaceStrStrChange,
+      onCaseSensitiveToggle,
+      onUseRegExpToggle,
+      onFindNext,
+      onFindPrevious,
+      onReplaceNext,
+      onReplaceAll,
+      disabled,
+    }) => (
+      <Area contentContainerStyle={styles.replaceScreen}>
+        <HGroup noHorizontalPadding>
+          <SearchControls
+            searchStr={searchStr}
+            occurrences={occurrences}
+            caseSensitive={caseSensitive}
+            useRegExp={useRegExp}
+            onSearchStrChange={onSearchStrChange}
+            onCaseSensitiveToggle={onCaseSensitiveToggle}
+            onUseRegExpToggle={onUseRegExpToggle}
+            onFindNext={onFindNext}
+            onFindPrevious={onFindPrevious}
+            disabled={disabled}
+          />
+        </HGroup>
+        <HGroup noPadding>
+          <CloseButton onPress={props.close} />
+          <ReplaceControls
+            replaceStr={replaceStr}
+            onReplaceStrStrChange={onReplaceStrStrChange}
+            onReplaceNext={onReplaceNext}
+            onReplaceAll={onReplaceAll}
+            disabled={disabled}
+          />
+        </HGroup>
+      </Area>
+    )}
+  </StateWrapper>
+);
 
 const SearchAndReplaceModal = withHostedModal(
   SearchAndReplaceScreen,
@@ -289,13 +343,21 @@ const createRemoveWebViewTopSpacing = (editorApi) => () => {
 })()`);
 };
 
-const findNext = async ({}, editorApi) => {};
+const getNumberOfOccurences = async ({ searchStr, caseSensitive, useRegExp }, editorApi) => {
+  // each of them should return number of occurences in total
 
-const findPrevious = async ({}, editorApi) => {};
+  return 5;
+};
 
-const replaceNext = async ({}, editorApi) => {};
+const findNext = async ({ searchStr, caseSensitive, useRegExp }, editorApi) => {
+  // each of them should return number of occurences in total
+};
 
-const replaceAll = async ({}, editorApi) => {};
+const findPrevious = async ({ searchStr, caseSensitive, useRegExp }, editorApi) => {};
+
+const replaceNext = async ({ searchStr, caseSensitive, useRegExp, replaceStr }, editorApi) => {};
+
+const replaceAll = async ({ searchStr, caseSensitive, useRegExp, replaceStr }, editorApi) => {};
 
 // We store modalPromise because this Promise instance has .id field
 // which contains reference to modal.
@@ -332,6 +394,7 @@ const tool = {
     modalPromise = showModal({
       renderer: searchScreenRenderer,
       props: {
+        getNumberOfOccurences: (params) => getNumberOfOccurences(params, editorApi),
         onFindNext: (params) => findNext(params, editorApi),
         onFindPrevious: (params) => findPrevious(params, editorApi),
       },
@@ -352,6 +415,7 @@ const tool = {
     modalPromise = showModal({
       renderer: searchAndReplaceScreenRenderer,
       props: {
+        getNumberOfOccurences: (params) => getNumberOfOccurences(params, editorApi),
         onFindNext: (params) => findNext(params, editorApi),
         onFindPrevious: (params) => findPrevious(params, editorApi),
         onReplaceNext: (params) => replaceNext(params, editorApi),
@@ -370,11 +434,11 @@ const tool = {
     }
   },
   onEditorLoad: () => {
+    // possibly at this point there is another API object after reload, need checking
+    // it should just re-initialize same API instance
     setWebViewTopSpacing();
   },
-  onEditorReady: () => {
-    setWebViewTopSpacing();
-  },
+  onEditorReady: () => {},
 };
 
 export default tool;
