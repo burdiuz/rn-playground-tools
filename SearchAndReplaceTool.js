@@ -1,28 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { View, StyleSheet, Modal, KeyboardAvoidingView } from 'react-native';
-import AsyncStorage from '@react-native-community/async-storage';
+import { View, StyleSheet } from 'react-native';
+// import AsyncStorage from '@react-native-community/async-storage';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import {
   Screen,
   Area,
-  HSlider,
-  VSlider,
   HGroup,
   TextInput,
   Button,
   IconButton,
-  TextButton,
   CheckBox,
-  CheckBoxButton,
   TEXT_ACTIVE_COLOR,
   withHostedModal,
-  TransparencyBackground,
-  withInputLabel,
-  TabView,
-  ColorSheet,
   Text,
   ActiveText,
 } from '@actualwave/react-native-kingnare-style';
@@ -60,13 +52,13 @@ const SearchControls = ({
       style={styles.fullFlex}
     />
     <IconButton
-      iconRenderer={() => <ActiveText>. *</ActiveText>}
+      iconRenderer={() => <ActiveText>aA</ActiveText>}
       selected={caseSensitive}
       onPress={onCaseSensitiveToggle}
       style={styles.marginH}
     />
     <IconButton
-      iconRenderer={() => <ActiveText>aA</ActiveText>}
+      iconRenderer={() => <ActiveText>. *</ActiveText>}
       selected={useRegExp}
       onPress={onUseRegExpToggle}
     />
@@ -343,21 +335,208 @@ const createRemoveWebViewTopSpacing = (editorApi) => () => {
 })()`);
 };
 
-const getNumberOfOccurences = async ({ searchStr, caseSensitive, useRegExp }, editorApi) => {
-  // each of them should return number of occurences in total
+const findAllUsingString = (originalText, originalSearch, caseSensitive) => {
+  let text = originalText;
+  let search = originalSearch;
+  const list = [];
 
-  return 5;
+  if (caseSensitive) {
+    text = originalText.toLowerCase();
+    search = originalSearch.toLowerCase();
+  }
+
+  let index = 0;
+  const { length: searchLength } = search;
+
+  while ((index = text.indexOf(search, index)) > -1) {
+    list.push(Object.assign([originalSearch], { index }));
+    index += searchLength;
+  }
+
+  return list;
 };
 
-const findNext = async ({ searchStr, caseSensitive, useRegExp }, editorApi) => {
-  // each of them should return number of occurences in total
+const findAllUsingRegExp = (text, searchStr, caseSensitive) => {
+  const list = [];
+  let item;
+  let rgx;
+
+  try {
+    rgx = new RegExp(searchStr, caseSensitive ? 'g' : 'gi');
+  } catch (error) {
+    return { list, error };
+  }
+
+  while ((item = rgx.exec(text))) {
+    list.push(item);
+  }
+
+  return { list };
 };
 
-const findPrevious = async ({ searchStr, caseSensitive, useRegExp }, editorApi) => {};
+const findAllOccurrences = async ({ searchStr, caseSensitive, useRegExp }, editorApi) => {
+  const text = await editorApi.getValue();
+  let list;
+  let error;
 
-const replaceNext = async ({ searchStr, caseSensitive, useRegExp, replaceStr }, editorApi) => {};
+  if (searchStr) {
+    if (useRegExp) {
+      ({ list, error } = findAllUsingRegExp(text, searchStr, caseSensitive));
+    } else {
+      list = findAllUsingString(text, searchStr, caseSensitive);
+    }
+  } else {
+    list = [];
+  }
 
-const replaceAll = async ({ searchStr, caseSensitive, useRegExp, replaceStr }, editorApi) => {};
+  return {
+    list,
+    text,
+    error,
+  };
+};
+
+const getOccurrencesList = async (params, editorApi) => {
+  const { list, error } = await findAllOccurrences(params, editorApi);
+
+  if (error) {
+    console.error(error);
+  }
+
+  return list;
+};
+
+const getNumberOfOccurences = async (params, editorApi) => {
+  const { list } = await findAllOccurrences(params, editorApi);
+
+  return list.length;
+};
+
+const getNextItem = (list, strIndex) =>
+  list.find(({ index: currentStrIndex }) => currentStrIndex >= strIndex);
+
+const getPreviousItem = (list, strIndex) => {
+  const { length: listLength } = list;
+  let lastItem;
+
+  for (let listIndex = 0; listIndex < listLength; listIndex++) {
+    const item = list[listIndex];
+    if (item.index + item[0].length < strIndex) {
+      lastItem = item;
+    } else {
+      return lastItem;
+    }
+  }
+
+  return undefined;
+};
+
+const setSelectionFrom = async (item, editorApi) => {
+  if (!item) {
+    return;
+  }
+
+  const start = item.index;
+  const end = item.index + item[0].length;
+
+  /*
+  focus() works on two levels
+  1. requests focus for WebView, focused input will be unfocused
+  2. focuses CodeMirror instance in WebView
+  This is important to do each time because otherwise selections are 
+  not visible until control is focused.
+*/
+  await editorApi.focus();
+  await editorApi.setSelection(start, end, { scroll: true });
+};
+
+const findNext = async (params, editorApi) => {
+  const list = await getOccurrencesList(params, editorApi);
+  const { index: selectionIndex } = (await editorApi.getCursor()) || { index: 0 };
+
+  setSelectionFrom(getNextItem(list, selectionIndex), editorApi);
+
+  return list.length;
+};
+
+const findPrevious = async (params, editorApi) => {
+  const list = await getOccurrencesList(params, editorApi);
+  const { index: selectionIndex } = (await editorApi.getCursor()) || { index: 0 };
+
+  setSelectionFrom(getPreviousItem(list, selectionIndex), editorApi);
+
+  return list.length;
+};
+
+const replaceNext = async (params, editorApi) => {
+  const { replaceStr } = params;
+  const { text, list, error } = await findAllOccurrences(params, editorApi);
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  /*
+    somehow cannot retrieve selection head position, so using anchor index
+    minus selection text to get head
+    
+    it should work like this:
+
+    const [fromIndex, toIndex] = await Promise.all([
+      editorApi.getCursor('head'),
+      editorApi.getCursor('anchor'),
+    ]).then((list) => list.map(({ index }) => index).sort());
+  */
+
+  const selection = await editorApi.getSelection();
+  const { index: toIndex } = await editorApi.getCursor();
+  const fromIndex = toIndex - selection.length;
+
+  const item = getNextItem(list, fromIndex);
+
+  if (!item) {
+    return list.length;
+  }
+
+  if (item.index === fromIndex && item[0] === selection) {
+    await editorApi.setValue(
+      `${text.substring(0, fromIndex)}${replaceStr}${text.substring(toIndex)}`,
+    );
+
+    await editorApi.setCursor(fromIndex + replaceStr.length);
+
+    return findNext(params, editorApi);
+  }
+
+  setSelectionFrom(item, editorApi);
+
+  return list.length;
+};
+
+const replaceAll = async (params, editorApi) => {
+  const { replaceStr } = params;
+  const { text, list, error } = await findAllOccurrences(params, editorApi);
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  const updatedText = list
+    .reverse()
+    .reduce(
+      (sourceText, { index, 0: match }) =>
+        `${sourceText.substring(0, index)}${replaceStr}${sourceText.substring(
+          index + match.length,
+        )}`,
+      text,
+    );
+
+  await editorApi.setValue(updatedText);
+
+  return 0;
+};
 
 // We store modalPromise because this Promise instance has .id field
 // which contains reference to modal.
@@ -406,7 +585,7 @@ const tool = {
     modalPromise = null;
   },
   longPressHandler: async ({ closeToolsPanel, showModal, hideModal, editorApi }) => {
-    hideModalCallback = hideModal;
+    initFns(editorApi, hideModal);
     setWebViewTopSpacing(REPLACE_MODAL_HEIGHT);
     closeToolsPanel();
 
