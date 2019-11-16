@@ -1409,6 +1409,7 @@ const loadStyleObjectProps = async (editorApi) => {
 const tool = {
   type: 'editor',
   mimeType: ['application/javascript'],
+  order: 120,
   iconRenderer: () => <ActiveText style={styles.icon}>{'{ : }'}</ActiveText>,
   pressHandler: async ({
     closeToolsPanel,

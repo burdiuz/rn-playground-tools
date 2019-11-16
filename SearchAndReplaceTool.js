@@ -551,15 +551,18 @@ let removeWebViewTopSpacing = () => {
 };
 
 // This will be function if search once modal called.
+let modalInitialized = false;
 let hideModalCallback = null;
 
 const initFns = (editorApi, hideModal) => {
   setWebViewTopSpacing = createSetWebViewTopSpacing(editorApi);
   removeWebViewTopSpacing = createRemoveWebViewTopSpacing(editorApi);
   hideModalCallback = hideModal;
+  modalInitialized = true;
 };
 
 const tool = {
+  order: 500,
   iconRenderer: () => (
     <MaterialCommunityIcons name="find-replace" color={TEXT_ACTIVE_COLOR} size={28} />
   ),
@@ -608,14 +611,16 @@ const tool = {
     modalPromise = null;
   },
   onEditorClose: () => {
-    if (hideModalCallback && modalPromise) {
+    if (modalInitialized && modalPromise) {
       hideModalCallback(modalPromise);
     }
   },
   onEditorLoad: () => {
     // possibly at this point there is another API object after reload, need checking
     // it should just re-initialize same API instance
-    setWebViewTopSpacing();
+    if (modalInitialized) {
+      setWebViewTopSpacing();
+    }
   },
   onEditorReady: () => {},
 };

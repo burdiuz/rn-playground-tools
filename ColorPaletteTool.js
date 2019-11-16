@@ -55,18 +55,20 @@ const channelsTo24BitColorNumber = (r, g, b) => (r << 16) | (g << 8) | b;
 const channelsTo32BitColorNumber = (r, g, b, a) => channelsTo24BitColorNumber(r, g, b) * 256 + a;
 
 const channelsToColorString = (r, g, b, a, type = '0x') => {
-  const value = type === '0x' || a !== 0xff
-    ? channelsTo32BitColorNumber(r, g, b, a)
-      .toString(16)
-      .padStart(8, '0')
-    : channelsTo24BitColorNumber(r, g, b)
-      .toString(16)
-      .padStart(6, '0');
+  const value =
+    type === '0x' || a !== 0xff
+      ? channelsTo32BitColorNumber(r, g, b, a)
+          .toString(16)
+          .padStart(8, '0')
+      : channelsTo24BitColorNumber(r, g, b)
+          .toString(16)
+          .padStart(6, '0');
 
   return `${type}${value}`;
 };
 
-const toColorString = (color, colorType) => channelsToColorString(...colorToChannels(color), colorType);
+const toColorString = (color, colorType) =>
+  channelsToColorString(...colorToChannels(color), colorType);
 
 const STORAGE_KEY = '@tool-color-palette-user-colors';
 
@@ -193,56 +195,64 @@ const ColorPaletteView = ({ color, onChange }) => {
         <LabelledTextInput
           label="R:"
           value={String(redChannel)}
-          onChangeText={(value) => onChange(
-            channelsTo32BitColorNumber(
-              parseChannelDecStr(value),
-              greenChannel,
-              blueChannel,
-              alphaChannel,
-            ),
-          )}
+          onChangeText={(value) =>
+            onChange(
+              channelsTo32BitColorNumber(
+                parseChannelDecStr(value),
+                greenChannel,
+                blueChannel,
+                alphaChannel,
+              ),
+            )
+          }
           style={styles.input}
           labelStyle={styles.inputLabel}
         />
         <LabelledTextInput
           label="G:"
           value={String(greenChannel)}
-          onChangeText={(value) => onChange(
-            channelsTo32BitColorNumber(
-              redChannel,
-              parseChannelDecStr(value),
-              blueChannel,
-              alphaChannel,
-            ),
-          )}
+          onChangeText={(value) =>
+            onChange(
+              channelsTo32BitColorNumber(
+                redChannel,
+                parseChannelDecStr(value),
+                blueChannel,
+                alphaChannel,
+              ),
+            )
+          }
           style={styles.input}
           labelStyle={styles.inputLabel}
         />
         <LabelledTextInput
           label="B:"
           value={String(blueChannel)}
-          onChangeText={(value) => onChange(
-            channelsTo32BitColorNumber(
-              redChannel,
-              greenChannel,
-              parseChannelDecStr(value),
-              alphaChannel,
-            ),
-          )}
+          onChangeText={(value) =>
+            onChange(
+              channelsTo32BitColorNumber(
+                redChannel,
+                greenChannel,
+                parseChannelDecStr(value),
+                alphaChannel,
+              ),
+            )
+          }
           style={styles.input}
           labelStyle={styles.inputLabel}
         />
         <LabelledTextInput
           label="A:"
           value={String(alphaChannel)}
-          onChangeText={(value) => onChange(
-            channelsTo32BitColorNumber(
-              redChannel,
-              greenChannel,
-              blueChannel,
-              parseChannelDecStr(value),
-            ),
-          )}
+          onChangeText={(value) =>
+            onChange(
+              channelsTo32BitColorNumber(
+                redChannel,
+                greenChannel,
+                blueChannel,
+                parseChannelDecStr(value),
+              ),
+            )
+          }
           style={styles.input}
           labelStyle={styles.inputLabel}
         />
@@ -252,66 +262,78 @@ const ColorPaletteView = ({ color, onChange }) => {
           <Slider
             label="Red:"
             value={red}
-            onChange={(value) => onChange(
-              channelsTo32BitColorNumber(
-                toChannel(value),
-                greenChannel,
-                blueChannel,
-                alphaChannel,
-              ),
-            )}
+            onChange={(value) =>
+              onChange(
+                channelsTo32BitColorNumber(
+                  toChannel(value),
+                  greenChannel,
+                  blueChannel,
+                  alphaChannel,
+                ),
+              )
+            }
           />
           <Slider
             label="Green:"
             value={green}
-            onChange={(value) => onChange(
-              channelsTo32BitColorNumber(redChannel, toChannel(value), blueChannel, alphaChannel),
-            )}
+            onChange={(value) =>
+              onChange(
+                channelsTo32BitColorNumber(redChannel, toChannel(value), blueChannel, alphaChannel),
+              )
+            }
           />
           <Slider
             label="Blue:"
             value={blue}
-            onChange={(value) => onChange(
-              channelsTo32BitColorNumber(
-                redChannel,
-                greenChannel,
-                toChannel(value),
-                alphaChannel,
-              ),
-            )}
+            onChange={(value) =>
+              onChange(
+                channelsTo32BitColorNumber(
+                  redChannel,
+                  greenChannel,
+                  toChannel(value),
+                  alphaChannel,
+                ),
+              )
+            }
           />
           <Slider
             label="Alpha:"
             value={alpha}
-            onChange={(value) => onChange(
-              channelsTo32BitColorNumber(redChannel, greenChannel, blueChannel, toChannel(value)),
-            )}
+            onChange={(value) =>
+              onChange(
+                channelsTo32BitColorNumber(redChannel, greenChannel, blueChannel, toChannel(value)),
+              )
+            }
           />
         </TabView.Child>
         <TabView.Child label="By Temperature">
           <ColorTemperature
             startingTemperature={red}
-            onValue={(value) => onChange(
-              channelsTo32BitColorNumber(
-                value >>> 16,
-                (value >>> 8) & 0xff,
-                (value >>> 8) & 0xff,
-                value & 0xff,
-                alphaChannel,
-              ),
-            )}
+            onValue={(value) =>
+              onChange(
+                channelsTo32BitColorNumber(
+                  value >>> 16,
+                  (value >>> 8) & 0xff,
+                  (value >>> 8) & 0xff,
+                  value & 0xff,
+                  alphaChannel,
+                ),
+              )
+            }
           />
         </TabView.Child>
         <TabView.Child label="Saved">
           <StoredColors
-            onValue={(value) => onChange(
-              channelsTo32BitColorNumber(
-                value >>> 24,
-                (value >>> 16) & 0xff,
-                (value >>> 8) & 0xff,
-                value & 0xff,
-              ),
-            )}
+            onValue={(value) =>
+              onChange(
+                channelsTo32BitColorNumber(
+                  value >>> 24,
+                  (value >>> 16) & 0xff,
+                  (value >>> 8) & 0xff,
+                  value & 0xff,
+                ),
+              )
+            }
           />
         </TabView.Child>
       </TabView>
@@ -396,7 +418,8 @@ const { renderer: colorPaletteScreenRenderer } = ColorPaletteToolModal;
 
 const FIND_COLOR_CODE_RGX = /(0x|#|^)([a-f\d]{3}|[a-f\d]{6}|[a-f\d]{8})(?=$|[^\w\d])/i;
 
-const getChannelFromColorString = (color, position) => Number.parseInt(color.substr(position * 2, 2) || 'ff', 16);
+const getChannelFromColorString = (color, position) =>
+  Number.parseInt(color.substr(position * 2, 2) || 'ff', 16);
 
 const parseColor = (color) => {
   if (color.length === 3) {
@@ -420,7 +443,8 @@ const tool = {
   pressHandler: async ({ closeToolsPanel, showModal, editorApi }) => {
     const selection = (await editorApi.getSelection()) || '';
 
-    const [selectedValue, colorType = '0x', colorString = 'ffffffff'] = selection.match(FIND_COLOR_CODE_RGX) || [];
+    const [selectedValue, colorType = '0x', colorString = 'ffffffff'] =
+      selection.match(FIND_COLOR_CODE_RGX) || [];
 
     const color = parseColor(colorString);
 
@@ -432,6 +456,7 @@ const tool = {
         colorType,
         initialColor: color,
         submitTitle: 'Paste To Code',
+        onCancel: () => null,
         onSubmit: async (value) => {
           if (selectedValue) {
             editorApi.replaceSelection(selection.replace(selectedValue, value));

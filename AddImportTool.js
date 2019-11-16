@@ -259,6 +259,7 @@ export const { renderer: importToolScreenRenderer } = ImportToolModal;
 const tool = {
   type: 'editor',
   mimeType: ['application/javascript'],
+  order: 140,
   iconRenderer: () => <MaterialCommunityIcons name="import" color={TEXT_ACTIVE_COLOR} size={28} />,
   pressHandler: async ({ closeToolsPanel, showModal, editorApi }) => {
     closeToolsPanel();

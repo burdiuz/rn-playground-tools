@@ -1228,6 +1228,7 @@ const { renderer: propTypeParametersToolScreenRenderer } = PropTypePropsToolModa
 const tool = {
   type: 'editor',
   mimeType: ['application/javascript'],
+  order: 110,
   iconRenderer: () => (
     <MaterialCommunityIcons name="playlist-edit" color={TEXT_ACTIVE_COLOR} size={28} />
   ),

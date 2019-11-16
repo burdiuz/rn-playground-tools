@@ -292,6 +292,7 @@ const prettifyEditorCode = async ({ editorApi }) => {
     });
   } catch (error) {
     console.error(error);
+    return;
   }
 
   editorApi.setValue(prettified);
@@ -300,6 +301,7 @@ const prettifyEditorCode = async ({ editorApi }) => {
 const tool = {
   type: 'editor',
   mimeType: ['application/javascript'],
+  order: 150,
   iconRenderer: () => <Image source={IMAGE_DATA} style={{ width: 28, height: 28 }} />,
   pressHandler: prettifyEditorCode,
   longPressHandler: async ({ closeToolsPanel, showModal, editorApi }) => {

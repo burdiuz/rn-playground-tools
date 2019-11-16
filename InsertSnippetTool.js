@@ -1,6 +1,7 @@
 import React, { Component, useState, useEffect, memo } from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
+import AsyncStorage from '@react-native-community/async-storage';
 import {
   View,
   StyleSheet,
@@ -11,6 +12,7 @@ import {
 } from 'react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import TransparentIconButton from 'source/components/TransparentIconButton';
 
 import {
   ACTIVE_BACKGROUND_COLOR,
@@ -22,13 +24,14 @@ import {
   Text,
   Small,
   TextInput,
+  IconButton,
   TextButton,
   VGroup,
   HGroup,
+  SBGroup,
   RGroup,
   HRule,
   SlimHeader,
-  ScrollArea,
   FormTextInput,
   withHostedModal,
   ModalScreen,
@@ -37,7 +40,50 @@ import {
 
 import { resetSnippets } from 'source/store/file/snippets/actions';
 import { getSnippetsList, areSnippetsInitialized } from 'source/store/file/snippets/selectors';
-import TransparentIconButton from 'source/components/TransparentIconButton';
+
+const SETTINGS_STORAGE_KEY = '@tool-insert-snippet-tool-settings';
+
+AsyncStorage.removeItem(SETTINGS_STORAGE_KEY);
+
+const getSettingsFromStorage = async () => {
+  let settings;
+
+  try {
+    settings = JSON.parse(await AsyncStorage.getItem(SETTINGS_STORAGE_KEY));
+  } catch (error) {
+    // ignore
+  }
+
+  return settings || { descriptions: true, starredSnippets: {} };
+};
+
+const isSnippetStarred = ({ filePath }, { starredSnippets }) => starredSnippets[filePath] === true;
+
+const toggleStarredSnippet = async (snippet) => {
+  const { filePath } = snippet;
+  const settings = await getSettingsFromStorage();
+  const { starredSnippets } = settings;
+
+  if (isSnippetStarred(snippet, settings)) {
+    delete starredSnippets[filePath];
+  } else {
+    starredSnippets[filePath] = true;
+  }
+
+  await AsyncStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+
+  return settings;
+};
+
+const updateSettings = async (updates) => {
+  const fromStrorage = await getSettingsFromStorage();
+
+  const settings = { ...fromStrorage, ...updates };
+
+  await AsyncStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+
+  return settings;
+};
 
 const styles = StyleSheet.create({
   fullFlex: { flex: 1 },
@@ -45,19 +91,38 @@ const styles = StyleSheet.create({
 
 const keyExtractor = ({ fileName }) => fileName;
 
-const snippetItemRenderer = (item, selected, onPress) => (
-  <TouchableHighlight onPress={onPress}>
-    <VGroup style={{ backgroundColor: selected ? ACTIVE_BACKGROUND_COLOR : 'transparent' }}>
-      <Text style={{ color: selected ? TEXT_ACTIVE_COLOR : TEXT_COLOR }}>
-        {item.name || item.fileName}
-      </Text>
-      <HRule />
-      <Small style={{ color: selected ? TEXT_ACTIVE_COLOR : TEXT_COLOR }}>
-        {item.description || ''}
-      </Small>
-    </VGroup>
-  </TouchableHighlight>
-);
+const snippetItemRenderer = (item, selected, onPress, settings, onStarSnippetToggle) => {
+  return (
+    <TouchableHighlight onPress={onPress}>
+      <VGroup
+        style={{
+          backgroundColor: selected ? ACTIVE_BACKGROUND_COLOR : 'transparent',
+          paddingTop: 5,
+        }}
+        noPadding
+      >
+        <SBGroup>
+          <Text style={{ color: selected ? TEXT_ACTIVE_COLOR : TEXT_COLOR }}>
+            {item.name || item.fileName}
+          </Text>
+          <TransparentIconButton
+            iconClass={MaterialCommunityIcons}
+            icon={isSnippetStarred(item, settings) ? 'star' : 'star-outline'}
+            color={selected ? TEXT_COLOR : TEXT_DISABLED_COLOR}
+            iconSize={22}
+            onPress={() => onStarSnippetToggle(item)}
+          />
+        </SBGroup>
+        {settings.descriptions ? (
+          <Small style={{ color: selected ? TEXT_ACTIVE_COLOR : TEXT_COLOR, marginHorizontal: 5 }}>
+            {item.description || ''}
+          </Small>
+        ) : null}
+        <HRule />
+      </VGroup>
+    </TouchableHighlight>
+  );
+};
 
 const noSnippetRenderer = (initialized) => (
   <Text style={{ width: '100%', textAlign: 'center' }}>
@@ -67,16 +132,33 @@ const noSnippetRenderer = (initialized) => (
   </Text>
 );
 
-const SnippetsListView = ({ initialized, list, selectedItem, onChange }) => (
-  <FlatList
-    data={list}
-    keyExtractor={keyExtractor}
-    renderItem={({ item }) =>
-      snippetItemRenderer(item, item === selectedItem, () => onChange(item))
-    }
-    ListEmptyComponent={() => noSnippetRenderer(initialized)}
-  />
-);
+const SnippetsListView = ({
+  initialized,
+  settings,
+  list,
+  selectedItem,
+  onChange,
+  onStarSnippetToggle,
+}) => {
+  return (
+    <FlatList
+      data={list}
+      extraData={settings}
+      keyExtractor={keyExtractor}
+      renderItem={({ item }) =>
+        snippetItemRenderer(
+          item,
+          item === selectedItem,
+          () => onChange(item),
+          settings,
+          onStarSnippetToggle,
+        )
+      }
+      ListEmptyComponent={() => noSnippetRenderer(initialized)}
+      style={styles.fullFlex}
+    />
+  );
+};
 
 /*
     This needs some explanation. Since I didn't came up with a nice solution,
@@ -98,20 +180,49 @@ const SnippetsListView = ({ initialized, list, selectedItem, onChange }) => (
     TLDR;
     Le optimization.
 */
-const SnippetsList = connect((state) => ({
-  list: getSnippetsList(state),
+const SnippetsList = connect((state, { settings }) => ({
+  list: getSnippetsList(state).sort((snippet1, snippet2) => {
+    const starred1 = isSnippetStarred(snippet1, settings);
+    const starred2 = isSnippetStarred(snippet2, settings);
+
+    if (starred1 && !starred2) {
+      return -1;
+    } else if (!starred1 && starred2) {
+      return 1;
+    }
+
+    return snippet1.name.toLowerCase() < snippet2.name.toLowerCase() ? -1 : 1;
+  }),
   initialized: areSnippetsInitialized(state),
 }))(SnippetsListView);
 
-const SnippetSelect = ({ onSelect, onCancel }) => {
+const SnippetSelect = ({
+  settings,
+  onDescriptionsToggle,
+  onStarSnippetToggle,
+  onSelect,
+  onCancel,
+}) => {
   const [selectedSnippet, setSelectedSnippet] = useState(null);
 
   return (
-    <Screen>
-      <SlimHeader>Select Code Snippet</SlimHeader>
-      <ScrollView style={styles.fullFlex}>
-        <SnippetsList selectedItem={selectedSnippet} onChange={setSelectedSnippet} />
-      </ScrollView>
+    <>
+      <SBGroup>
+        <SlimHeader>Select Code Snippet</SlimHeader>
+        <IconButton
+          iconRenderer={() => (
+            <MaterialCommunityIcons name="card-text-outline" color={TEXT_ACTIVE_COLOR} size={20} />
+          )}
+          onPress={onDescriptionsToggle}
+          selected={settings.descriptions}
+        />
+      </SBGroup>
+      <SnippetsList
+        settings={settings}
+        selectedItem={selectedSnippet}
+        onChange={setSelectedSnippet}
+        onStarSnippetToggle={onStarSnippetToggle}
+      />
       <HGroup style={{ paddingTop: 5, justifyContent: 'space-between' }}>
         <TextButton label="Cancel" onPress={onCancel} />
         <TextButton
@@ -120,7 +231,7 @@ const SnippetSelect = ({ onSelect, onCancel }) => {
           onPress={() => onSelect(selectedSnippet)}
         />
       </HGroup>
-    </Screen>
+    </>
   );
 };
 
@@ -146,7 +257,7 @@ const SnippetParameters = ({ list, onSubmit, onCancel, onBack }) => {
   }, [list]);
 
   return (
-    <DimensionScreen>
+    <>
       <SlimHeader>Enter Snippet Parameters</SlimHeader>
       <VGroup style={styles.fullFlex}>
         <ScrollView style={styles.fullFlex}>
@@ -168,7 +279,7 @@ const SnippetParameters = ({ list, onSubmit, onCancel, onBack }) => {
         </View>
         <TextButton label="Insert" onPress={() => onSubmit(values)} />
       </HGroup>
-    </DimensionScreen>
+    </>
   );
 };
 
@@ -209,13 +320,24 @@ const applyValuesToSnippet = ({ body }, values) =>
     body,
   );
 
-const SnippetSelectScreen = ({ onSubmit, onCancel }) => {
+const SnippetSelectScreen = ({ settings: initialSettings, onSubmit, onCancel }) => {
   const [parameters, setParameters] = useState(null);
   const [snippet, setSnippet] = useState(null);
+  const [settings, setSettings] = useState(initialSettings);
 
   if (!snippet) {
     return (
       <SnippetSelect
+        settings={settings}
+        onDescriptionsToggle={async () => {
+          const { descriptions } = settings;
+          const updated = await updateSettings({ descriptions: !descriptions });
+          setSettings(updated);
+        }}
+        onStarSnippetToggle={async (snippet) => {
+          const updated = await toggleStarredSnippet(snippet);
+          setSettings(updated);
+        }}
         onSelect={(item) => {
           const parameters = getSnippetParameters(item);
 
@@ -361,7 +483,6 @@ const SnippetCreateNewScreenView = ({
   7;
   const [fileName, setFileName] = useState('');
   const [exists, setExists] = useState(false);
-  isSnippetExists;
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
 
@@ -413,10 +534,9 @@ const SnippetCreateNewScreenView = ({
   );
 };
 
-const SnippetCreateNewScreen = connect(
-  null,
-  (dispatch, { projectsApi }) => ({ reset: () => dispatch(resetSnippets({ projectsApi })) }),
-)(SnippetCreateNewScreenView);
+const SnippetCreateNewScreen = connect(null, (dispatch, { getSnippetsRoot, projectsApi }) => ({
+  reset: () => dispatch(resetSnippets({ getSnippetsRoot, projectsApi })),
+}))(SnippetCreateNewScreenView);
 
 const SnippetCreateNewModal = withHostedModal(
   SnippetCreateNewScreen,
@@ -431,14 +551,18 @@ export const { renderer: snippetCreateNewRenderer } = SnippetCreateNewModal;
 const tool = {
   type: 'editor',
   mimeType: ['application/javascript'],
+  order: 130,
   iconRenderer: () => (
     <MaterialCommunityIcons name="alpha-s-box-outline" color={TEXT_ACTIVE_COLOR} size={28} />
   ),
   pressHandler: async ({ closeToolsPanel, showModal, editorApi }) => {
     closeToolsPanel();
+    const settings = await getSettingsFromStorage();
+
     showModal({
       renderer: snippetSelectScreenRenderer,
       props: {
+        settings,
         onSubmit: (value) => {
           editorApi.replaceSelection(value);
         },
@@ -446,8 +570,15 @@ const tool = {
       },
     });
   },
-  longPressHandler: async ({ closeToolsPanel, showModal, showAlert, editorApi, projectsApi }) => {
-    const { createFile, getSnippetsRoot } = projectsApi;
+  longPressHandler: async ({
+    closeToolsPanel,
+    showModal,
+    showAlert,
+    editorApi,
+    projectsApi,
+    fsRoots: { getSnippetsRoot },
+  }) => {
+    const { createFile } = projectsApi;
     closeToolsPanel();
 
     const body = await editorApi.getSelection();
@@ -458,7 +589,7 @@ const tool = {
     }
 
     const parameters = getSnippetParameters({ body }, false);
-    const root = await projectsApi.getSnippetsRoot();
+    const root = await getSnippetsRoot();
 
     const isSnippetExists = (fileName) => root.fs.has(fileName);
 
@@ -469,6 +600,7 @@ const tool = {
         parameters,
         isSnippetExists,
         projectsApi,
+        getSnippetsRoot,
         onSubmit: (fileName, snippet) => {
           const { parameters: params } = snippet;
 
