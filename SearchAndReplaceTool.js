@@ -140,8 +140,6 @@ const StateWrapper = ({
     })();
   }, [searchStr, caseSensitive, useRegExp]);
 
-  const disabled = !searchStr;
-
   return renderer({
     ...props,
     searchStr,
@@ -443,7 +441,7 @@ const setSelectionFrom = async (item, editorApi) => {
   focus() works on two levels
   1. requests focus for WebView, focused input will be unfocused
   2. focuses CodeMirror instance in WebView
-  This is important to do each time because otherwise selections are 
+  This is important to do each time because otherwise selections are
   not visible until control is focused.
 */
   await editorApi.focus();
@@ -480,7 +478,7 @@ const replaceNext = async (params, editorApi) => {
   /*
     somehow cannot retrieve selection head position, so using anchor index
     minus selection text to get head
-    
+
     it should work like this:
 
     const [fromIndex, toIndex] = await Promise.all([

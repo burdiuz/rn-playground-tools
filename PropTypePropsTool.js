@@ -51,7 +51,10 @@ let defaultJSXStringQuote = '"';
 const findJSXStringEndQuote = (str, quote, startQuotePos = 0) =>
   str.indexOf(quote, startQuotePos + 1);
 
-const STR_ENTITIES_DECODE = [[/&quot;/g, '"'], [/&apos;/g, "'"]];
+const STR_ENTITIES_DECODE = [
+  [/&quot;/g, '"'],
+  [/&apos;/g, "'"],
+];
 
 const decodeHTMLEntities = (str) => {
   STR_ENTITIES_DECODE.forEach(([rgx, repl]) => {
@@ -61,7 +64,10 @@ const decodeHTMLEntities = (str) => {
   return str;
 };
 
-const STR_ENTITIES_ENCODE = [[/"/g, '&quot;'], [/'/g, '&apos;']];
+const STR_ENTITIES_ENCODE = [
+  [/"/g, '&quot;'],
+  [/'/g, '&apos;'],
+];
 
 const encodeHTMLEntities = (str) => {
   STR_ENTITIES_ENCODE.forEach(([rgx, repl]) => {
@@ -409,8 +415,6 @@ const loadTargetComponent = async (editorApi, editorFile, codevalApi) => {
   let defaultProps;
   let propTypesList;
   let TargetComponent;
-  let targetPropTypes;
-  let targetDefaults;
 
   try {
     target = parseTagByIndex(content, position);
@@ -689,8 +693,6 @@ const NonPropRow = memoPropRow((props) => {
     index,
   } = props;
 
-  const [expanded, setExpanded] = useState(false);
-
   return (
     <PropRow {...props}>
       <ExpandableValue
@@ -749,7 +751,7 @@ NumberPropRow.displayName = 'NumberPropRow';
 
 const BoolPropRow = memoPropRow((props) => {
   const {
-    prop: { value, valueIdentifier },
+    prop: { value },
     index,
     onChange,
   } = props;
@@ -760,7 +762,7 @@ const BoolPropRow = memoPropRow((props) => {
       buttons={
         <CheckBoxButton
           selected={value === 'true'}
-          onPress={() => onChange(index, { value: String(!(value === 'true')) })}
+          onPress={() => onChange(index, { value: String(value !== 'true') })}
           style={{ alignSelf: 'flex-end' }}
         />
       }
@@ -792,7 +794,7 @@ FuncPropRow.displayName = 'FuncPropRow';
 
 const EnumPropRow = memoPropRow((props) => {
   const {
-    prop: { name, value, type, valueIdentifier },
+    prop: { value, type, valueIdentifier },
     onChange,
     index,
   } = props;
@@ -989,7 +991,7 @@ const PROPERTY_TYPES = [
 const AddCustomProperty = memo(
   ({ onAddProperty }) => {
     const [name, setName] = useState(null);
-    const [typeItem, setTypeItem] = useState(DEFAULT_PROPERTY_TYPE);
+    const [typeItem] = useState(DEFAULT_PROPERTY_TYPE);
     return (
       <>
         <SlimHeader spaceAbove>Add Custom Property</SlimHeader>
@@ -1167,7 +1169,7 @@ class PropTypePropsToolView extends Component {
   };
 
   render() {
-    const { name, propTypes, propTypesList, defaultProps, close } = this.props;
+    const { name, propTypes, propTypesList, close } = this.props;
 
     const { list } = this.state;
 
@@ -1245,7 +1247,6 @@ const tool = {
     try {
       const {
         target,
-        message,
         content,
         position,
         propTypes,

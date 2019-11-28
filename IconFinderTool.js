@@ -153,7 +153,7 @@ const IconImage = ({ size = ${size}, color = '#ffffff, loadingView = null }) => 
       break;
   }
 
-  return (data = {
+  return ({
     key: `react-native-vector-icons/${fontFamily}`,
     importCode: includeImport
       ? `import ${fontFamily} from 'react-native-vector-icons/${fontFamily}';\n`
@@ -311,7 +311,7 @@ const usedFonts = {};
 
 const prepareFont = ({ label, value: factory }) => {
   if (!usedFonts[label]) {
-    const { default: Font, getStyledIconSet } = factory();
+    const { default: Font } = factory();
 
     usedFonts[label] = {
       Font,

@@ -312,8 +312,7 @@ const ColorPaletteView = ({ color, onChange }) => {
             onValue={(value) =>
               onChange(
                 channelsTo32BitColorNumber(
-                  value >>> 16,
-                  (value >>> 8) & 0xff,
+                  (value >>> 16) & 0xff,
                   (value >>> 8) & 0xff,
                   value & 0xff,
                   alphaChannel,

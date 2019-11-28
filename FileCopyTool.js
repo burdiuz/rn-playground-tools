@@ -188,7 +188,7 @@ export class CopyScreen extends Component {
 
     const action = move ? moveTo : copyTo;
 
-    const result = await action(item, target.fs.getChildPath(name));
+    await action(item, target.fs.getChildPath(name));
 
     if (move) {
       item.parentUpdated();

@@ -68,18 +68,14 @@ https://facebook.github.io/react-native/docs/view-style-props
 
 import React, { Component, memo, useMemo } from 'react';
 import PropTypes from 'prop-types';
-import { View, StyleSheet, FlatList, SectionList } from 'react-native';
+import { StyleSheet, FlatList, SectionList } from 'react-native';
 import { connect } from 'react-redux';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import BasicIconButton from 'source/buttons/BasicIconButton';
-import { showModal } from 'source/store/modals/actions';
-import { getToolByFileName } from 'source/store/file/tools/selectors';
 
 import {
   ModalScreen,
   HGroup,
   SBGroup,
-  Section,
   TextInput,
   TextButton,
   IconButton,
@@ -87,12 +83,18 @@ import {
   CheckBoxButton,
   SmallHeaderText,
   DropDown,
+  TEXT_ACTIVE_COLOR,
   TEXT_DISABLED_COLOR,
   withHostedModal,
   Text,
   ActiveText,
   DisabledText,
 } from '@actualwave/react-native-kingnare-style';
+
+import BasicIconButton from 'source/buttons/BasicIconButton';
+import { showModal } from 'source/store/modals/actions';
+import { getToolByFileName } from 'source/store/file/tools/selectors';
+import TransparentIconButton from 'source/components/TransparentIconButton';
 
 /*
   I'm using modal from Color Palette Tool to display color selection in this tool.
@@ -681,7 +683,7 @@ const parseStyleObject = (str, cursorIndex) => {
   let char;
 
   do {
-    nextIndex = skipToLabelEnd(str, lastIndex);
+    let nextIndex = skipToLabelEnd(str, lastIndex);
     char = str.charAt(nextIndex);
 
     const label = trimSpacesAndComments(str.substring(lastIndex, nextIndex));
@@ -777,8 +779,14 @@ const stringifyValue = (name, value) => {
   }
 };
 
-const combileStyleObjectPart = ({ str, preSpaces, preComments, value, postComments, postSpaces }) =>
-  `${preSpaces}${preComments}${value}${postSpaces}${postComments}`;
+const combileStyleObjectPart = ({
+  str,
+  preSpaces = ' ',
+  preComments = '',
+  value,
+  postComments = '',
+  postSpaces = '',
+}) => `${preSpaces}${preComments}${value}${postSpaces}${postComments}`;
 
 const combileStyleObject = (properties) =>
   properties.reduce((str, { label, value }) => {
@@ -815,7 +823,10 @@ const buildPropertiesString = (styles, list) => {
 
         if (isStyleProp(name)) {
           etalon = item;
-          return !prop || !prop.enabled || !!prop.value;
+
+          if (prop && prop.changed && (prop.value === '' || prop.value === undefined)) {
+            return false;
+          }
         }
 
         return true;
@@ -856,12 +867,18 @@ const buildPropertiesString = (styles, list) => {
 
   return Object.keys(values).reduce((result, name) => {
     const {
-      label: { preSpaces: preLabel, postSpaces: postLabel },
-      value: { preSpaces: preValue, postSpaces: postValue },
+      label: { preSpaces: preLabel = ' ', postSpaces: postLabel = '' },
+      value: { preSpaces: preValue = ' ', postSpaces: postValue = '' },
     } = etalon;
-    const value = stringifyValue(name, values[name].value);
+    const { value } = values[name];
 
-    return `${result}${preLabel}${name}${postLabel}:${preValue}${value}${postValue},`;
+    if (value === '' || value === undefined) {
+      return result;
+    }
+
+    const valueStr = stringifyValue(name, value);
+
+    return `${result}${preLabel}${name}${postLabel}:${preValue}${valueStr}${postValue},`;
   }, str);
 };
 
@@ -1062,14 +1079,31 @@ const renderPropValue = (value, enabled, prop, onChange) => {
   return <ValueComponent value={value} enabled={enabled} prop={prop} onChange={onChange} />;
 };
 
+const RemoveValueButton = ({ name, disabled, onDelete }) => (
+  <TransparentIconButton
+    iconClass={MaterialCommunityIcons}
+    icon="close"
+    color={disabled ? TEXT_DISABLED_COLOR : TEXT_ACTIVE_COLOR}
+    disabled={disabled}
+    onPress={() => onDelete(name)}
+  />
+);
+
 const StylePropRow = memo(
-  ({ value, enabled, prop, onChange }) => {
+  ({ value, enabled, prop, onChange, onDelete }) => {
     const { name } = prop;
 
     return (
       <SBGroup>
         <ActiveText>{name}</ActiveText>
-        {renderPropValue(value, enabled, prop, onChange)}
+        <HGroup noPadding>
+          {renderPropValue(value, enabled, prop, onChange)}
+          <RemoveValueButton
+            name={name}
+            disabled={value === undefined || value === ''}
+            onDelete={onDelete}
+          />
+        </HGroup>
       </SBGroup>
     );
   },
@@ -1134,6 +1168,23 @@ class StyleComposerToolView extends Component {
             ...prevData,
             changed: true,
             value,
+          },
+        },
+      };
+    });
+
+  handleDelete = (name) =>
+    this.setState(({ values }) => {
+      const { [name]: prevData = { enabled: true } } = values;
+
+      return {
+        values: {
+          ...values,
+          [name]: {
+            ...prevData,
+            changed: true,
+            enabled: true,
+            value: '',
           },
         },
       };
@@ -1218,7 +1269,7 @@ class StyleComposerToolView extends Component {
     });
 
   renderSectionHeader = ({ section }) => {
-    const { label, expanded, undefinedVisible, data } = section;
+    const { label, expanded, undefinedVisible } = section;
 
     return (
       <SectionButton
@@ -1256,6 +1307,7 @@ class StyleComposerToolView extends Component {
         value={value}
         enabled={enabled}
         onChange={this.handleChange}
+        onDelete={this.handleDelete}
       />
     );
   };

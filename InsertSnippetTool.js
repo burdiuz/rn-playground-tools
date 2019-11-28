@@ -480,7 +480,6 @@ const SnippetCreateNewScreenView = ({
   reset,
 }) => {
   const [parameters, setParameters] = useState(initParams);
-  7;
   const [fileName, setFileName] = useState('');
   const [exists, setExists] = useState(false);
   const [title, setTitle] = useState('');

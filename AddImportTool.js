@@ -92,7 +92,7 @@ const togglePackageSelection = (selectedImports, importName) => {
   return toggleSelection(selectedImports, importName);
 };
 
-const selectPackageExportName = (selectedExports = {}, exportName) => ({
+const selectPackageExportName = (selectedExports, exportName) => ({
   ...selectedExports,
   [exportName]: true,
 });
