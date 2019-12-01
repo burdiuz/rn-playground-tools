@@ -345,6 +345,9 @@ const STYLE_PROP_MAP = STYLE_SECTIONS.reduce(
   {},
 );
 
+const PROP_MODE = 'prop';
+const OBJ_MODE = 'obj';
+
 let defaultStringQuote = '"';
 
 /*
@@ -366,7 +369,13 @@ const isSkippable = (str, index = 0) => {
   return '({[\'"`'.includes(char) || (char === '/' && '/*'.includes(str.charAt(index + 1)));
 };
 
-const findObjectStartingBrace = (str, cursorPos) => str.substr(str, cursorPos + 1).lastIndexOf('{');
+const findObjectStartingBrace = (str, cursorPos) => {
+  const substr = str.substr(str, cursorPos + 1);
+  const opening = substr.lastIndexOf('{');
+  const closing = substr.lastIndexOf('}');
+
+  return closing < opening ? opening : -1;
+};
 
 // ----------------- SKIP QUOTED STRING SECTION
 
@@ -805,6 +814,22 @@ const combileStyleObject = (properties) =>
   Here is the final step of te tool session, so we don't care about keeping data unchanged,
   it will be gone anyway and you can't save it. Don't even try, it's a dead weight, move on.
 */
+const stylesToString = (styles, list, mode) => {
+  let str = buildPropertiesString(styles, list);
+  switch (mode) {
+    case PROP_MODE:
+      str = ` style={{${str}}}`;
+      break;
+    case OBJ_MODE:
+      str = `{${str}}`;
+      break;
+    default:
+      break;
+  }
+
+  return str;
+};
+
 const buildPropertiesString = (styles, list) => {
   const values = { ...styles };
   let etalon;
@@ -1196,6 +1221,18 @@ class StyleComposerToolView extends Component {
     onSubmit(this.state.values);
   };
 
+  handleInsertProp = () => {
+    const { onSubmit } = this.props;
+
+    onSubmit(this.state.values, PROP_MODE);
+  };
+
+  handleInsertObj = () => {
+    const { onSubmit } = this.props;
+
+    onSubmit(this.state.values, OBJ_MODE);
+  };
+
   handleToggleSections = () =>
     this.setState(({ sections, values, sectionsEnabled }) => {
       const enabled = !sectionsEnabled;
@@ -1352,7 +1389,7 @@ class StyleComposerToolView extends Component {
   }
 
   render() {
-    const { close } = this.props;
+    const { updateMode, close } = this.props;
     const { sectionsEnabled } = this.state;
 
     return (
@@ -1384,7 +1421,18 @@ class StyleComposerToolView extends Component {
         {this.renderList()}
         <SBGroup style={styles.mt5}>
           <TextButton label="Cancel" onPress={close} />
-          <TextButton label="Update" onPress={this.handleUpdate} />
+          {updateMode ? (
+            <TextButton label="Update" onPress={this.handleUpdate} />
+          ) : (
+            <HGroup noPadding>
+              <TextButton
+                label="Insert styles={{...}}"
+                onPress={this.handleInsertProp}
+                style={{ marginRight: 5 }}
+              />
+              <TextButton label="Insert {...} " onPress={this.handleInsertObj} />
+            </HGroup>
+          )}
         </SBGroup>
       </>
     );
@@ -1450,11 +1498,24 @@ const loadStyleObjectProps = async (editorApi) => {
       styles,
       position,
       content,
+      updateMode: true,
     };
   } catch (error) {
+    /*
     throw new Error(
       'Could not read object properties. Please, place cursor into the styles object(between "{" and "}") and try again.',
     );
+    */
+
+    return {
+      properties: [],
+      styles: {},
+      position,
+      startIndex: position,
+      endIndex: position,
+      content,
+      updateMode: false,
+    };
   }
 };
 
@@ -1480,14 +1541,16 @@ const tool = {
         endIndex,
         properties,
         styles,
+        updateMode,
       } = await loadStyleObjectProps(editorApi);
 
       showModal({
         renderer: styleComposerToolScreenRenderer,
         props: {
           values: styles,
-          onSubmit: async (newStyles) => {
-            const stylesString = buildPropertiesString(newStyles, properties);
+          updateMode,
+          onSubmit: async (newStyles, mode) => {
+            const stylesString = stylesToString(newStyles, properties, mode);
             const code = `${content.substring(0, startIndex)}${stylesString}${content.substring(
               endIndex,
             )}`;
