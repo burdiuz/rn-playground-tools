@@ -1,4 +1,4 @@
-import React, { Component, useState, useEffect, memo } from 'react';
+import React, { Component, useState, useEffect, useMemo, memo } from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 import AsyncStorage from '@react-native-community/async-storage';
@@ -12,6 +12,9 @@ import {
 } from 'react-native';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { ToolIconButton } from 'source/components/ToolButtonList';
+import { showModal } from 'source/store/modals/actions';
+import { getToolByFileName } from 'source/store/file/tools/selectors';
 import TransparentIconButton from 'source/components/TransparentIconButton';
 
 import {
@@ -39,11 +42,22 @@ import {
 } from '@actualwave/react-native-kingnare-style';
 
 import { resetSnippets } from 'source/store/file/snippets/actions';
-import { getSnippetsList, areSnippetsInitialized } from 'source/store/file/snippets/selectors';
+import {
+  getSnippetsList,
+  getSnippetByFilePath,
+  areSnippetsInitialized,
+} from 'source/store/file/snippets/selectors';
 
 const SETTINGS_STORAGE_KEY = '@tool-insert-snippet-tool-settings';
+const BUTTONS_STORAGE_KEY = '@tool-insert-snippet-tool-buttons';
 
-AsyncStorage.removeItem(SETTINGS_STORAGE_KEY);
+/*
+  I'm using modal from Color Palette Tool to display color selection in this tool.
+  For more information, search for ShowColorPaletteButton component
+*/
+const COLOR_PALETTE_TOOL_FILE_NAME = 'ColorPaletteTool.js';
+
+// ---------------- Settings Async Storage
 
 const getSettingsFromStorage = async () => {
   let settings;
@@ -85,13 +99,80 @@ const updateSettings = async (updates) => {
   return settings;
 };
 
+// ---------------- Snippet Buttons Async Storage
+
+const getSnippetButtonsFromStorage = async () => {
+  let list;
+
+  try {
+    list = JSON.parse(await AsyncStorage.getItem(BUTTONS_STORAGE_KEY));
+  } catch (error) {
+    // ignore
+  }
+
+  return list || [];
+};
+
+const removeSnippetButton = async (filePath) => {
+  const original = await getSnippetButtonsFromStorage();
+  const list = original.filter(({ filePath: itemName }) => itemName !== filePath);
+
+  await AsyncStorage.setItem(BUTTONS_STORAGE_KEY, JSON.stringify(list));
+
+  return list;
+};
+
+const addSnippetButton = async (filePath, name, color = 0xffffffff) => {
+  const original = await removeSnippetButton(name);
+  const list = [...original, { filePath, name, color }];
+
+  list.sort(({ name: a }, { name: b }) => (a < b ? -1 : 1));
+
+  await AsyncStorage.setItem(BUTTONS_STORAGE_KEY, JSON.stringify(list));
+
+  return list;
+};
+
 const styles = StyleSheet.create({
   fullFlex: { flex: 1 },
 });
 
+/*
+
+
+
+
+
+
+  ============================================  Select and Apply Snippet from the List
+
+
+
+
+
+
+*/
+
 const keyExtractor = ({ fileName }) => fileName;
 
-const snippetItemRenderer = (item, selected, onPress, settings, onStarSnippetToggle) => {
+const getButtonColor = ({ filePath }, buttons) => {
+  const item = buttons.find(({ filePath: item }) => item === filePath);
+
+  return item ? item.color : undefined;
+};
+
+const snippetItemRenderer = ({
+  item,
+  selected,
+  onPress,
+  settings,
+  buttons,
+  onStarSnippetToggle,
+  onButtonColorToggle,
+  showColorPalette,
+}) => {
+  const currentColor = getButtonColor(item, buttons);
+
   return (
     <TouchableHighlight onPress={onPress}>
       <VGroup
@@ -105,13 +186,35 @@ const snippetItemRenderer = (item, selected, onPress, settings, onStarSnippetTog
           <Text style={{ color: selected ? TEXT_ACTIVE_COLOR : TEXT_COLOR }}>
             {item.name || item.fileName}
           </Text>
-          <TransparentIconButton
-            iconClass={MaterialCommunityIcons}
-            icon={isSnippetStarred(item, settings) ? 'star' : 'star-outline'}
-            color={selected ? TEXT_COLOR : TEXT_DISABLED_COLOR}
-            iconSize={22}
-            onPress={() => onStarSnippetToggle(item)}
-          />
+          <HGroup noPadding>
+            <TransparentIconButton
+              iconClass={MaterialCommunityIcons}
+              icon="card"
+              color={currentColor === undefined ? TEXT_DISABLED_COLOR : currentColor}
+              iconSize={22}
+              onPress={async () => {
+                if (currentColor !== undefined) {
+                  onButtonColorToggle(undefined, item);
+                  return;
+                }
+
+                try {
+                  const color = await showColorPalette();
+
+                  onButtonColorToggle(parseInt(color), item);
+                } catch (error) {
+                  // ignore
+                }
+              }}
+            />
+            <TransparentIconButton
+              iconClass={MaterialCommunityIcons}
+              icon={isSnippetStarred(item, settings) ? 'star' : 'star-outline'}
+              color={selected ? TEXT_COLOR : TEXT_DISABLED_COLOR}
+              iconSize={22}
+              onPress={() => onStarSnippetToggle(item)}
+            />
+          </HGroup>
         </SBGroup>
         {settings.descriptions ? (
           <Small style={{ color: selected ? TEXT_ACTIVE_COLOR : TEXT_COLOR, marginHorizontal: 5 }}>
@@ -135,24 +238,52 @@ const noSnippetRenderer = (initialized) => (
 const SnippetsListView = ({
   initialized,
   settings,
+  buttons,
   list,
   selectedItem,
+  showModal,
   onChange,
   onStarSnippetToggle,
+  onButtonColorToggle,
+  colorPaletteModalRenderer,
 }) => {
+  const extraData = useMemo(() => ({}), [settings, buttons]);
+  const showColorPalette = useMemo(() => {
+    if (!colorPaletteModalRenderer || !showModal) {
+      return undefined;
+    }
+
+    return () =>
+      new Promise((resolve, reject) => {
+        showModal({
+          renderer: colorPaletteModalRenderer,
+          props: {
+            colorType: '0x',
+            initialColor: 0x000000ff,
+            submitTitle: ' Apply ',
+            onCancel: reject,
+            onSubmit: resolve,
+          },
+        });
+      });
+  }, [colorPaletteModalRenderer, showModal]);
+
   return (
     <FlatList
       data={list}
-      extraData={settings}
+      extraData={extraData}
       keyExtractor={keyExtractor}
       renderItem={({ item }) =>
-        snippetItemRenderer(
+        snippetItemRenderer({
           item,
-          item === selectedItem,
-          () => onChange(item),
+          selected: item === selectedItem,
+          onPress: () => onChange(item),
           settings,
+          buttons,
           onStarSnippetToggle,
-        )
+          onButtonColorToggle,
+          showColorPalette,
+        })
       }
       ListEmptyComponent={() => noSnippetRenderer(initialized)}
       style={styles.fullFlex}
@@ -180,26 +311,37 @@ const SnippetsListView = ({
     TLDR;
     Le optimization.
 */
-const SnippetsList = connect((state, { settings }) => ({
-  list: getSnippetsList(state).sort((snippet1, snippet2) => {
-    const starred1 = isSnippetStarred(snippet1, settings);
-    const starred2 = isSnippetStarred(snippet2, settings);
+const SnippetsList = connect(
+  (state, { settings }) => {
+    const { ColorPaletteToolModal: { renderer: colorPaletteModalRenderer } = {} } =
+      getToolByFileName(state, { fileName: COLOR_PALETTE_TOOL_FILE_NAME }) || {};
 
-    if (starred1 && !starred2) {
-      return -1;
-    } else if (!starred1 && starred2) {
-      return 1;
-    }
+    return {
+      list: getSnippetsList(state).sort((snippet1, snippet2) => {
+        const starred1 = isSnippetStarred(snippet1, settings);
+        const starred2 = isSnippetStarred(snippet2, settings);
 
-    return snippet1.name.toLowerCase() < snippet2.name.toLowerCase() ? -1 : 1;
-  }),
-  initialized: areSnippetsInitialized(state),
-}))(SnippetsListView);
+        if (starred1 && !starred2) {
+          return -1;
+        } else if (!starred1 && starred2) {
+          return 1;
+        }
+
+        return snippet1.name.toLowerCase() < snippet2.name.toLowerCase() ? -1 : 1;
+      }),
+      initialized: areSnippetsInitialized(state),
+      colorPaletteModalRenderer,
+    };
+  },
+  { showModal },
+)(SnippetsListView);
 
 const SnippetSelect = ({
   settings,
+  buttons,
   onDescriptionsToggle,
   onStarSnippetToggle,
+  onButtonColorToggle,
   onSelect,
   onCancel,
 }) => {
@@ -219,9 +361,11 @@ const SnippetSelect = ({
       </SBGroup>
       <SnippetsList
         settings={settings}
+        buttons={buttons}
         selectedItem={selectedSnippet}
         onChange={setSelectedSnippet}
         onStarSnippetToggle={onStarSnippetToggle}
+        onButtonColorToggle={onButtonColorToggle}
       />
       <HGroup style={{ paddingTop: 5, justifyContent: 'space-between' }}>
         <TextButton label="Cancel" onPress={onCancel} />
@@ -236,8 +380,8 @@ const SnippetSelect = ({
 };
 
 const SnippetParameter = memo(
-  ({ label, description, value, onChange }) => (
-    <FormTextInput label={label} value={value} onChangeText={onChange}>
+  ({ label, description, value, onChange, focusOnMount }) => (
+    <FormTextInput label={label} value={value} onChangeText={onChange} focusOnMount={focusOnMount}>
       {description ? <Small>{description}</Small> : null}
     </FormTextInput>
   ),
@@ -261,11 +405,12 @@ const SnippetParameters = ({ list, onSubmit, onCancel, onBack }) => {
       <SlimHeader>Enter Snippet Parameters</SlimHeader>
       <VGroup style={styles.fullFlex}>
         <ScrollView style={styles.fullFlex}>
-          {list.map(({ name, label, description }) => (
+          {list.map(({ name, label, description }, index) => (
             <SnippetParameter
               key={name}
               label={label}
               description={description}
+              focusOnMount={!index}
               value={values[name]}
               onChange={(value) => updateValues({ ...values, [name]: value })}
             />
@@ -275,7 +420,9 @@ const SnippetParameters = ({ list, onSubmit, onCancel, onBack }) => {
       <HGroup style={{ paddingTop: 5, justifyContent: 'space-between' }}>
         <View style={{ flexDirection: 'row' }}>
           <TextButton label="Cancel" onPress={onCancel} />
-          <TextButton label="Back" onPress={onBack} style={{ marginHorizontal: 10 }} />
+          {onBack ? (
+            <TextButton label="Back" onPress={onBack} style={{ marginHorizontal: 10 }} />
+          ) : null}
         </View>
         <TextButton label="Insert" onPress={() => onSubmit(values)} />
       </HGroup>
@@ -320,15 +467,23 @@ const applyValuesToSnippet = ({ body }, values) =>
     body,
   );
 
-const SnippetSelectScreen = ({ settings: initialSettings, onSubmit, onCancel }) => {
+const SnippetSelectScreen = ({
+  settings: initialSettings,
+  buttons: initialButtons,
+  refreshButtonsList,
+  onSubmit,
+  onCancel,
+}) => {
   const [parameters, setParameters] = useState(null);
   const [snippet, setSnippet] = useState(null);
+  const [buttons, setButtons] = useState(initialButtons);
   const [settings, setSettings] = useState(initialSettings);
 
   if (!snippet) {
     return (
       <SnippetSelect
         settings={settings}
+        buttons={buttons}
         onDescriptionsToggle={async () => {
           const { descriptions } = settings;
           const updated = await updateSettings({ descriptions: !descriptions });
@@ -337,6 +492,18 @@ const SnippetSelectScreen = ({ settings: initialSettings, onSubmit, onCancel }) 
         onStarSnippetToggle={async (snippet) => {
           const updated = await toggleStarredSnippet(snippet);
           setSettings(updated);
+        }}
+        onButtonColorToggle={async (color, { filePath, name }) => {
+          let updated;
+
+          if (color === undefined) {
+            updated = await removeSnippetButton(filePath);
+          } else {
+            updated = await addSnippetButton(filePath, name, color);
+          }
+
+          setButtons(updated);
+          refreshButtonsList();
         }}
         onSelect={(item) => {
           const parameters = getSnippetParameters(item);
@@ -379,6 +546,79 @@ const SnippetSelectModal = withHostedModal(
 );
 
 export const { renderer: snippetSelectScreenRenderer } = SnippetSelectModal;
+
+/*
+
+
+
+
+
+
+  ============================================  Apply Snippet By Name
+
+
+
+
+
+
+*/
+
+const ApplyByFileView = ({ snippet, onSubmit, onCancel, onNotExists }) => {
+  const [parameters, setParameters] = useState([]);
+  const handleSubmit = (values) => {
+    const result = applyValuesToSnippet(snippet, values);
+
+    onSubmit(result);
+  };
+
+  useEffect(() => {
+    if (!snippet) {
+      onNotExists();
+      return;
+    }
+
+    const parameters = getSnippetParameters(snippet);
+
+    if (!parameters || !parameters.length) {
+      handleSubmit({});
+      return;
+    }
+
+    setParameters(parameters);
+  }, []);
+
+  return <SnippetParameters list={parameters} onSubmit={handleSubmit} onCancel={onCancel} />;
+};
+
+const ApplyByFileScreen = connect((state, { filePath }) => ({
+  snippet: getSnippetByFilePath(state, { filePath }),
+}))(ApplyByFileView);
+
+const ApplyByFileModal = withHostedModal(
+  ApplyByFileScreen,
+  ['onSubmit', 'onCancel', 'onNotExists'],
+  {},
+  undefined,
+  ModalScreen,
+);
+
+export const { renderer: applyByFileRenderer } = ApplyByFileModal;
+
+/*
+
+
+
+
+
+
+  ============================================  Create New Snippet
+
+
+
+
+
+
+*/
 
 const CreateSnippetParameter = memo(
   ({ parameter, index, onChange, onRemove }) => {
@@ -493,7 +733,7 @@ const SnippetCreateNewScreenView = ({
 
   return (
     <DimensionScreen>
-      <KeyboardAvoidingView style={styles.fullFlex} behavior="padding" enabled>
+      <KeyboardAvoidingView style={styles.fullFlex} enabled>
         <ScrollView>
           <SlimHeader>Create new Snippet</SlimHeader>
           <Small>This will create a code snippet from a selection in the Code Editor.</Small>
@@ -547,24 +787,94 @@ const SnippetCreateNewModal = withHostedModal(
 
 export const { renderer: snippetCreateNewRenderer } = SnippetCreateNewModal;
 
+const getIconStringFromName = (name) =>
+  name
+    .match(/(^.|[A-Z]|\d|(?<=[^\w\d])\w)/g)
+    .join('')
+    .substr(0, 3);
+
+const getIconFromName = (name, color) => (
+  <Text style={{ fontWeight: '600', color }}>{getIconStringFromName(name)}</Text>
+);
+
+const SnippetButtons = ({ onPress, onLongPress }) => {
+  const [buttons, setButtons] = useState([]);
+  const [refreshNum, refreshButtons] = useState(0);
+  const refreshButtonsList = () => refreshButtons(Date.now());
+
+  useEffect(() => {
+    (async () => {
+      const list = await getSnippetButtonsFromStorage();
+
+      setButtons(list);
+    })();
+  }, [refreshNum]);
+
+  return (
+    <>
+      <ToolIconButton
+        icon={
+          <MaterialCommunityIcons name="alpha-s-box-outline" color={TEXT_ACTIVE_COLOR} size={28} />
+        }
+        onPress={() => onPress({ refreshButtonsList })}
+        onLongPress={onLongPress}
+      />
+      {buttons.map(({ filePath, name, color }) => (
+        <ToolIconButton
+          key={filePath}
+          icon={getIconFromName(name || filePath, color)}
+          onPress={() => onPress({ snippetByFile: filePath })}
+        />
+      ))}
+    </>
+  );
+};
+
 const tool = {
   type: 'editor',
   mimeType: ['application/javascript'],
-  order: 130,
-  iconRenderer: () => (
-    <MaterialCommunityIcons name="alpha-s-box-outline" color={TEXT_ACTIVE_COLOR} size={28} />
+  order: 10,
+  // order: 130,
+  controlRenderer: (pressHandler, longPressHandler) => (
+    <SnippetButtons onPress={pressHandler} onLongPress={longPressHandler} />
   ),
-  pressHandler: async ({ closeToolsPanel, showModal, editorApi }) => {
+  pressHandler: async ({
+    closeToolsPanel,
+    showModal,
+    showAlert,
+    editorApi,
+    data: { refreshButtonsList, snippetByFile },
+  }) => {
     closeToolsPanel();
+
+    if (snippetByFile) {
+      showModal({
+        renderer: applyByFileRenderer,
+        props: {
+          filePath: snippetByFile,
+          onSubmit: (value) => editorApi.replaceSelection(value),
+          onNotExists: async () => {
+            await removeSnippetButton(snippetByFile);
+            refreshButtonsList();
+            showAlert('Could not find the snippet. If it still exists, re-add it to the buttons.');
+          },
+          onCancel: () => null,
+        },
+      });
+
+      return;
+    }
+
     const settings = await getSettingsFromStorage();
+    const buttons = await getSnippetButtonsFromStorage();
 
     showModal({
       renderer: snippetSelectScreenRenderer,
       props: {
+        buttons,
         settings,
-        onSubmit: (value) => {
-          editorApi.replaceSelection(value);
-        },
+        refreshButtonsList,
+        onSubmit: (value) => editorApi.replaceSelection(value),
         onCancel: () => null,
       },
     });
