@@ -1,19 +1,31 @@
-import React, { useState } from 'react';
+import React, { Component, useState, useMemo, useCallback, memo } from 'react';
 import PropTypes from 'prop-types';
+import { connect } from 'react-redux';
 import { View, FlatList, StyleSheet, Clipboard } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import debounce from 'lodash/debounce';
 
 import { imports } from '@actualwave/react-native-codeval';
+import withCodevalApi from 'source/providers/withCodevalApi';
+import { loadModule } from 'source/store/file/modules/actions';
+import { getAvailableModuleImportList, getCachedModule } from 'source/store/file/modules/selectors';
 
 import {
   CheckBox,
   CheckBoxButton,
+  TEXT_COLOR,
   TEXT_ACTIVE_COLOR,
   withHostedModal,
-  TextButton,
   Text,
+  DisabledText,
   HGroup,
-  SmallHeader,
+  SBGroup,
+  TabView,
+  TextInput,
+  TextButton,
+  IconButton,
+  LinkButton,
+  SmallHeaderText,
   Section,
   ModalScreen,
 } from '@actualwave/react-native-kingnare-style';
@@ -25,11 +37,17 @@ const styles = StyleSheet.create({
   rowWrap: { flexDirection: 'row', flexWrap: 'wrap' },
 });
 
-const capitalizeImport = (name) =>
+const capitalizeImport = (name, isFunc = false) =>
   name
-    .replace(/^[^/]+\//, '')
+    .replace(/[^/]+\//g, '')
     .match(/[a-z\d]+/gi)
-    .map((part) => (part ? `${part.charAt().toUpperCase()}${part.substr(1)}` : part))
+    .map((part, index) => {
+      if (!part || (!index && isFunc)) {
+        return part;
+      }
+
+      return `${part.charAt().toUpperCase()}${part.substr(1)}`;
+    })
     .join('');
 
 const retrieveModuleExportsList = (name) => {
@@ -124,7 +142,7 @@ const ModuleExportsListItem = ({ name, selected, onPress }) => (
   <CheckBox label={name} selected={selected} onPress={onPress} />
 );
 
-const renderModuleExportsListItem = (selectedExports, setSelectedExports, importName) => ({
+const renderModuleExportsListItem = (selectedExports, onExportNameSelected, importName) => ({
   item,
 }) => {
   const name = item === 'default' ? `default as ${capitalizeImport(importName)}` : item;
@@ -134,117 +152,341 @@ const renderModuleExportsListItem = (selectedExports, setSelectedExports, import
       key={item}
       name={name}
       selected={isPackageExportNameSelected(selectedExports, item)}
-      onPress={() => setSelectedExports(togglePackageExportNameSelection(selectedExports, item))}
+      onPress={() => onExportNameSelected(importName, item)}
     />
   );
 };
 
-const ModuleExportsList = ({ importName, list, selectedExports, setSelectedExports }) => (
+const ModuleExportsList = ({ importName, list, selectedExports, onExportNameSelected }) => (
   <FlatList
     data={list}
     extraData={selectedExports}
     keyExtractor={(name) => name}
-    renderItem={renderModuleExportsListItem(selectedExports, setSelectedExports, importName)}
+    renderItem={renderModuleExportsListItem(selectedExports, onExportNameSelected, importName)}
     style={{ marginLeft: 25 }}
   />
 );
 
-const ImportsListItem = ({ name, selected, onPress, selectedExports, setSelectedExports }) => {
-  const [exportsList, setExportsList] = useState(null);
+const BuiltinsListItem = memo(
+  ({ name, selected, onPress, selectedExports, onPackageSelected, onExportNameSelected }) => {
+    const [exportsList, setExportsList] = useState(null);
 
-  const version = getModuleVersion(name);
-  const versionText = version ? <Text style={{ marginHorizontal: 10 }}>{version}</Text> : null;
+    const version = getModuleVersion(name);
+    const versionText = version ? (
+      <Text style={{ marginHorizontal: 10, fontSize: 12 }}>{version}</Text>
+    ) : null;
 
-  return (
-    <Section
-      label={name}
-      numberOfLines={1}
-      ellipsizeMode="head"
-      onExpanded={() => {
-        if (!exportsList) {
-          setExportsList(retrieveModuleExportsList(name));
+    return (
+      <Section
+        label={name}
+        labelStyle={{ fontSize: 12 }}
+        numberOfLines={1}
+        ellipsizeMode="head"
+        onExpanded={() => {
+          if (!exportsList) {
+            setExportsList(retrieveModuleExportsList(name));
+          }
+        }}
+        headerChildren={
+          <>
+            {versionText}
+            <CheckBoxButton selected={selected} onPress={() => onPackageSelected(name)} />
+          </>
         }
-      }}
-      headerChildren={
-        <>
-          {versionText}
-          <CheckBoxButton selected={selected} onPress={onPress} />
-        </>
-      }
-    >
-      {exportsList ? (
-        <ModuleExportsList
-          list={exportsList}
-          selectedExports={selectedExports}
-          setSelectedExports={setSelectedExports}
-          importName={name}
-        />
-      ) : null}
-    </Section>
-  );
-};
+      >
+        {exportsList
+          ? () => (
+              <ModuleExportsList
+                list={exportsList}
+                selectedExports={selectedExports}
+                onExportNameSelected={onExportNameSelected}
+                importName={name}
+              />
+            )
+          : null}
+      </Section>
+    );
+  },
+  ({ selected: a1, selectedExports: b1 }, { selected: a2, selectedExports: b2 }) =>
+    a1 === a2 && b1 === b2,
+);
 
-const renderImportsListItem = (selectedImports, setSelectedImports) => ({ item }) => (
-  <ImportsListItem
+const renderBuiltinsListItem = (selectedImports, onPackageSelected, onExportNameSelected) => ({
+  item,
+}) => (
+  <BuiltinsListItem
     key={item}
     name={item}
     selectedExports={selectedImports[item]}
-    setSelectedExports={(selectedExports) => {
-      setSelectedImports({
-        ...selectedImports,
-        [item]: selectedExports,
-      });
-    }}
     selected={isPackageSelected(selectedImports, item)}
-    onPress={() => {
-      setSelectedImports(togglePackageSelection(selectedImports, item));
-    }}
+    onPackageSelected={onPackageSelected}
+    onExportNameSelected={onExportNameSelected}
   />
 );
 
-const ImportsList = ({ list, style, selectedImports, setSelectedImports }) => (
+const BuiltinsList = ({
+  list,
+  style,
+  selectedImports,
+  onPackageSelected,
+  onExportNameSelected,
+}) => (
   <FlatList
     data={list}
     extraData={selectedImports}
     keyExtractor={(name) => name}
-    renderItem={renderImportsListItem(selectedImports, setSelectedImports)}
+    renderItem={renderBuiltinsListItem(selectedImports, onPackageSelected, onExportNameSelected)}
     style={style}
   />
 );
 
-const ImportToolView = ({ list, close, pasteIntoCode, copyToClipboard }) => {
-  const [selectedImports, setSelectedImports] = useState({});
+const Builtins = ({ importsFilter, showToolPackages, ...props }) => {
+  const list = useMemo(
+    () =>
+      imports.listImportedModules().filter((name) => {
+        if (importsFilter && !name.includes(importsFilter)) {
+          return false;
+        }
 
-  return (
-    <>
-      <SmallHeader>Add Build-in import</SmallHeader>
-      <ImportsList
-        list={list}
-        selectedImports={selectedImports}
-        setSelectedImports={setSelectedImports}
-      />
-      <HGroup style={{ marginTop: 5 }}>
-        <TextButton label="Cancel" onPress={close} />
-        <View style={styles.fullFlex} />
-        <TextButton
-          label="Copy"
-          onPress={() => {
-            const importsStr = buildImports(selectedImports);
-            copyToClipboard(importsStr);
-          }}
-          style={{ marginHorizontal: 10 }}
-        />
-        <TextButton
-          label="Paste To Code"
-          onPress={() => {
-            const importsStr = buildImports(selectedImports);
-            pasteIntoCode(importsStr);
-          }}
-        />
-      </HGroup>
-    </>
+        if (
+          !showToolPackages &&
+          (name.includes('babel') || name.includes('lodash/') || name.includes('lodash.'))
+        ) {
+          return false;
+        }
+
+        return true;
+      }),
+    [importsFilter, showToolPackages],
   );
+
+  return <BuiltinsList {...props} list={list} />;
 };
+
+const ExternalsListItemView = memo(
+  ({
+    name,
+    selected,
+    moduleExports,
+    onPress,
+    load,
+    selectedExports,
+    onPackageSelected,
+    onExportNameSelected,
+  }) => {
+    const [exportsList, setExportsList] = useState(
+      moduleExports ? Object.keys(moduleExports) : null,
+    );
+
+    let loadedBtn = null;
+    const handleModuleLoad = useCallback(async () => {
+      const exports = await load();
+      setExportsList(Object.keys(exports).sort());
+    }, []);
+
+    if (exportsList) {
+      loadedBtn = (
+        <DisabledText style={{ marginHorizontal: 10, fontSize: 12 }}>Loaded</DisabledText>
+      );
+    } else {
+      loadedBtn = (
+        <LinkButton
+          label="Load"
+          onPress={handleModuleLoad}
+          style={{ marginHorizontal: 10 }}
+          labelStyle={{ fontSize: 12 }}
+        />
+      );
+    }
+
+    return (
+      <Section
+        label={name}
+        numberOfLines={1}
+        labelStyle={{ fontSize: 12 }}
+        ellipsizeMode="head"
+        onExpanded={() => {
+          if (!exportsList) {
+            handleModuleLoad();
+          }
+        }}
+        headerChildren={
+          <>
+            {loadedBtn}
+            <CheckBoxButton selected={selected} onPress={() => onPackageSelected(name)} />
+          </>
+        }
+      >
+        {exportsList
+          ? () => (
+              <ModuleExportsList
+                list={exportsList}
+                selectedExports={selectedExports}
+                onExportNameSelected={onExportNameSelected}
+                importName={name}
+              />
+            )
+          : null}
+      </Section>
+    );
+  },
+  (
+    { selected: a1, selectedExports: a2, moduleExports: a3 },
+    { selected: b1, selectedExports: b2, moduleExports: b3 },
+  ) => a1 === b1 && a2 === b2 && a3 === b3,
+);
+
+const ExternalsListItem = withCodevalApi(
+  connect(
+    (state, { name }) => ({
+      moduleExports: getCachedModule(state, { name }),
+    }),
+    (dispatch, { name, codevalApi }) => ({
+      load: () => dispatch(loadModule({ name, codevalApi })),
+    }),
+  )(ExternalsListItemView),
+);
+
+const renderExternalsListItem = (selectedImports, onPackageSelected, onExportNameSelected) => ({
+  item,
+}) => (
+  <ExternalsListItem
+    key={item}
+    name={item}
+    selectedExports={selectedImports[item]}
+    selected={isPackageSelected(selectedImports, item)}
+    onPackageSelected={onPackageSelected}
+    onExportNameSelected={onExportNameSelected}
+  />
+);
+
+const ExternalsList = ({
+  list,
+  style,
+  selectedImports,
+  onPackageSelected,
+  onExportNameSelected,
+}) => (
+  <FlatList
+    data={list}
+    extraData={selectedImports}
+    keyExtractor={(name) => name}
+    renderItem={renderExternalsListItem(selectedImports, onPackageSelected, onExportNameSelected)}
+    style={style}
+  />
+);
+
+const Externals = connect((state, { importsFilter }) => ({
+  list: getAvailableModuleImportList(state).filter(
+    (name) => !importsFilter || name.includes(importsFilter),
+  ),
+}))(ExternalsList);
+
+class ImportToolView extends Component {
+  state = {
+    showToolPackages: false,
+    filterText: '',
+    importsFilter: '',
+    selectedImports: {},
+  };
+
+  handleFilterChange = debounce((importsFilter) => this.setState({ importsFilter }), 1000);
+
+  handleFilterTextChange = (text) => {
+    this.setState({ filterText: text });
+    this.handleFilterChange(text.length > 1 ? text : '');
+  };
+
+  handleModuleLoad = () =>
+    this.setState(({ showToolPackages }) => ({ showToolPackages: !showToolPackages }));
+
+  handlePackageSelected = (name) => {
+    const { selectedImports } = this.state;
+
+    this.setState({
+      selectedImports: togglePackageSelection(selectedImports, name),
+    });
+  };
+
+  handleExportNameSelected = (packageName, exportName) => {
+    const { selectedImports } = this.state;
+    const { [packageName]: selectedExports } = selectedImports;
+
+    this.setState({
+      selectedImports: {
+        ...selectedImports,
+        [packageName]: togglePackageExportNameSelection(selectedExports, exportName),
+      },
+    });
+  };
+
+  handleCopy = () => {
+    const { copyToClipboard } = this.props;
+    const { selectedImports } = this.state;
+    const importsStr = buildImports(selectedImports);
+    copyToClipboard(importsStr);
+  };
+
+  handlePasteToCode = () => {
+    const { pasteIntoCode } = this.props;
+    const { selectedImports } = this.state;
+    const importsStr = buildImports(selectedImports);
+    pasteIntoCode(importsStr);
+  };
+
+  render() {
+    const { close } = this.props;
+    const { showToolPackages, filterText, importsFilter, selectedImports } = this.state;
+
+    return (
+      <>
+        <HGroup>
+          <SmallHeaderText>Add Imports</SmallHeaderText>
+          <TextInput
+            placeholder="Filter package names"
+            style={{ flex: 1, marginLeft: 10 }}
+            value={filterText}
+            onChangeText={this.handleFilterTextChange}
+          />
+          <IconButton
+            iconRenderer={() => (
+              <MaterialCommunityIcons name="toolbox" size={24} color={TEXT_COLOR} />
+            )}
+            selected={showToolPackages}
+            onPress={this.handleModuleLoad}
+            style={{ marginLeft: 10 }}
+          />
+        </HGroup>
+        <TabView style={{ flex: 1 }}>
+          <TabView.Child label=" Built-in Libraries ">
+            <Builtins
+              importsFilter={importsFilter}
+              showToolPackages={showToolPackages}
+              selectedImports={selectedImports}
+              setSelectedImports={this.setSelectedImports}
+              onPackageSelected={this.handlePackageSelected}
+              onExportNameSelected={this.handleExportNameSelected}
+            />
+          </TabView.Child>
+          <TabView.Child label=" External Modules ">
+            <Externals
+              importsFilter={importsFilter}
+              selectedImports={selectedImports}
+              onPackageSelected={this.handlePackageSelected}
+              onExportNameSelected={this.handleExportNameSelected}
+            />
+          </TabView.Child>
+        </TabView>
+        <HGroup style={{ marginTop: 5 }}>
+          <TextButton label="Cancel" onPress={close} />
+          <View style={styles.fullFlex} />
+          <TextButton label="Copy" onPress={this.handleCopy} style={{ marginHorizontal: 10 }} />
+          <TextButton label="Paste To Code" onPress={this.handlePasteToCode} />
+        </HGroup>
+      </>
+    );
+  }
+}
 
 const ImportToolModal = withHostedModal(
   ImportToolView,
@@ -266,7 +508,6 @@ const tool = {
     showModal({
       renderer: importToolScreenRenderer,
       props: {
-        list: imports.listImportedModules(),
         pasteIntoCode: async (imports) => {
           const code = await editorApi.getValue();
           editorApi.setValue(`${imports}${code}`);
