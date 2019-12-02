@@ -370,7 +370,15 @@ const isSkippable = (str, index = 0) => {
 };
 
 const findObjectStartingBrace = (str, cursorPos) => {
-  const substr = str.substr(str, cursorPos + 1);
+  if (str.charAt(cursorPos + 1) === '{') {
+    return cursorPos + 1;
+  }
+
+  if (str.charAt(cursorPos) === '{') {
+    return cursorPos;
+  }
+
+  const substr = str.substr(str, cursorPos);
   const opening = substr.lastIndexOf('{');
   const closing = substr.lastIndexOf('}');
 

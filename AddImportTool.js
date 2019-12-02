@@ -457,7 +457,7 @@ class ImportToolView extends Component {
             style={{ marginLeft: 10 }}
           />
         </HGroup>
-        <TabView style={{ flex: 1 }}>
+        <TabView style={{ flex: 1, paddingBottom: 35 }}>
           <TabView.Child label=" Built-in Libraries ">
             <Builtins
               importsFilter={importsFilter}
@@ -477,7 +477,7 @@ class ImportToolView extends Component {
             />
           </TabView.Child>
         </TabView>
-        <HGroup style={{ marginTop: 5 }}>
+        <HGroup style={{ marginTop: 5, height: 35 }}>
           <TextButton label="Cancel" onPress={close} />
           <View style={styles.fullFlex} />
           <TextButton label="Copy" onPress={this.handleCopy} style={{ marginHorizontal: 10 }} />

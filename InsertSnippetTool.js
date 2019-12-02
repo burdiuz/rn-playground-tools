@@ -789,7 +789,8 @@ export const { renderer: snippetCreateNewRenderer } = SnippetCreateNewModal;
 
 const getIconStringFromName = (name) =>
   name
-    .match(/(^.|[A-Z]|\d|(?<=[^\w\d])\w)/g)
+    .match(/(^.|[A-Z]|\d|[^\w\d]\w)/g)
+    .map((str) => str.charAt(str.length - 1))
     .join('')
     .substr(0, 3);
 
@@ -833,8 +834,7 @@ const SnippetButtons = ({ onPress, onLongPress }) => {
 const tool = {
   type: 'editor',
   mimeType: ['application/javascript'],
-  order: 10,
-  // order: 130,
+  order: 130,
   controlRenderer: (pressHandler, longPressHandler) => (
     <SnippetButtons onPress={pressHandler} onLongPress={longPressHandler} />
   ),
