@@ -1434,7 +1434,7 @@ class StyleComposerToolView extends Component {
           ) : (
             <HGroup noPadding>
               <TextButton
-                label="Insert styles={{...}}"
+                label="Insert style={{...}}"
                 onPress={this.handleInsertProp}
                 style={{ marginRight: 5 }}
               />
