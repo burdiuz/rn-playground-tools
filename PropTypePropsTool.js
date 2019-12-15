@@ -509,7 +509,7 @@ const renderPropType = ({ type, value, required } = {}) => {
     case TYPES.shape:
       return TYPES.object;
     default:
-      return type;
+      return type || TYPES.unknown;
   }
 };
 
@@ -1097,25 +1097,33 @@ const getValueIdentifierForType = ({ type, value }) => {
 
 const buildPropsStringFrom = (list) =>
   list.reduce(
-    (props, { changed, str, type: { type }, preSpaces, name, valueIdentifier, value }) => {
+    (
+      props,
+      {
+        changed,
+        str,
+        // I backup type object because if tool could not identify component(missing import or else), it will be undefined.
+        type: { type } = {},
+        preSpaces = ' ',
+        name,
+        valueIdentifier = COMPUTABLE_VALUE_IDENTIFIER,
+        value,
+      },
+    ) => {
       if (!changed) {
         return `${props}${str}`;
       }
 
-      switch (type) {
-        case TYPES.bool:
-          return `${props}${preSpaces}${name}${value === 'true' ? '' : '={false}'}`;
-
-        case undefined: // spread in props
-          return `${props}${preSpaces}${valueIdentifier}${value}${getClosingSymbol(
-            valueIdentifier,
-          )}`;
-
-        default:
-          return `${props}${preSpaces}${name}=${valueIdentifier}${value}${getClosingSymbol(
-            valueIdentifier,
-          )}`;
+      if (type === TYPES.bool) {
+        return `${props}${preSpaces}${name}${value === 'true' ? '' : '={false}'}`;
+      } else if (type === undefined && !name) {
+        // spread object in props
+        return `${props}${preSpaces}${valueIdentifier}${value}${getClosingSymbol(valueIdentifier)}`;
       }
+
+      return `${props}${preSpaces}${name}=${valueIdentifier}${value}${getClosingSymbol(
+        valueIdentifier,
+      )}`;
     },
     '',
   );

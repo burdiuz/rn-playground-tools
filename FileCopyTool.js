@@ -40,8 +40,8 @@ const CopyFormView = (props) => {
   const {
     values: { name: nameValue, target, directory, move },
     errors: { name: nameError },
+    setFieldValue,
     handleSubmit,
-    handleChange,
     handleBlur,
     onCancel,
     isSubmitting,
@@ -65,7 +65,7 @@ const CopyFormView = (props) => {
       <FormTextInput
         label={directory ? 'Directory Name' : 'File Name'}
         value={nameValue}
-        onChangeText={handleChange('name')}
+        onChangeText={(text) => setFieldValue('name', text)}
         onBlur={handleBlur('name')}
         errorMessage={nameError}
       />
@@ -76,7 +76,7 @@ const CopyFormView = (props) => {
       <ActiveArea style={{ flex: 1 }}>
         <ScrollView>
           <Root
-            onPress={({ item }) => handleChange('target')(item)}
+            onPress={({ item }) => setFieldValue('target', item)}
             readDirectory={readDirectory}
             getRoot={getRoot}
             listItemFilter={({ type }) => type !== FILE_TYPE}
@@ -86,7 +86,7 @@ const CopyFormView = (props) => {
       </ActiveArea>
       <CheckBox
         selected={move}
-        onPress={() => handleChange('move')(!move)}
+        onPress={() => setFieldValue('move', !move)}
         label="Move to destination"
         disabled={directory}
       />
@@ -97,7 +97,7 @@ const CopyFormView = (props) => {
 CopyFormView.propTypes = {
   values: PropTypes.shape({}).isRequired,
   errors: PropTypes.shape({}).isRequired,
-  handleChange: PropTypes.func.isRequired,
+  setFieldValue: PropTypes.func.isRequired,
   handleSubmit: PropTypes.func.isRequired,
   isSubmitting: PropTypes.bool.isRequired,
   titleRenderer: PropTypes.func,

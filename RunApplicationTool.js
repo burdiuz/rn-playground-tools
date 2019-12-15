@@ -39,10 +39,13 @@ const tool = {
       onLongPress={longPressHandler}
     />
   ),
-  pressHandler: async ({ editorApi, codevalApi, data: { rootTag } }) => {
+  pressHandler: async ({ editorApi, editorFile: file, codevalApi, data: { rootTag } }) => {
     try {
+      const __FILE__ = file.path;
+      const __PATH__ = file.fs.parentPath();
+
       const content = await editorApi.getValue();
-      const modules = await codevalApi.evaluate(content);
+      const modules = await codevalApi.evaluate(content, { __FILE__, __PATH__ }, file);
       let { default: AppComponent } = modules;
       if (!AppComponent) {
         AppComponent = modules;

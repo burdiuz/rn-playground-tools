@@ -102,8 +102,8 @@ const PrettierOptionsFormView = ({
     proseWrap,
   },
   errors,
+  setFieldValue,
   handleSubmit,
-  handleChange,
   handleBlur,
   onCancel,
 }) => (
@@ -112,7 +112,7 @@ const PrettierOptionsFormView = ({
       <FormTextInput
         label="Print Width"
         value={printWidth}
-        onChangeText={handleChange('printWidth')}
+        onChangeText={(text) => setFieldValue('printWidth', text)}
         onBlur={handleBlur('printWidth')}
         errorMessage={errors.printWidth}
       />
@@ -122,7 +122,7 @@ const PrettierOptionsFormView = ({
       <FormTextInput
         label="Tab Width"
         value={tabWidth}
-        onChangeText={handleChange('tabWidth')}
+        onChangeText={(text) => setFieldValue('tabWidth', text)}
         onBlur={handleBlur('tabWidth')}
         errorMessage={errors.tabWidth}
         style={{ marginBottom: 10 }}
@@ -130,24 +130,24 @@ const PrettierOptionsFormView = ({
       <CheckBox
         label="Print semicolons at the ends of statements"
         selected={semi}
-        onPress={() => handleChange('semi')(!semi)}
+        onPress={() => setFieldValue('semi', !semi)}
       />
       <CheckBox
         label="Use single quotes instead of double quotes"
         selected={singleQuote}
-        onPress={() => handleChange('singleQuote')(!singleQuote)}
+        onPress={() => setFieldValue('singleQuote', !singleQuote)}
       />
       <CheckBox
         label="Use single quotes instead of double quotes in JSX"
         selected={jsxSingleQuote}
-        onPress={() => handleChange('jsxSingleQuote')(!jsxSingleQuote)}
+        onPress={() => setFieldValue('jsxSingleQuote', !jsxSingleQuote)}
         contentContainerStyle={{ alignItems: 'flex-start', marginBottom: 10 }}
       />
       <InputPlaceholder label="Quote Props">
         <DropDown
           items={QUOTE_PROPS}
           selectedItem={QUOTE_PROPS.find(({ value }) => value === quoteProps)}
-          onChange={({ value }) => handleChange('quoteProps')(value)}
+          onChange={({ value }) => setFieldValue('quoteProps', value)}
         />
         <Small>Change when properties in objects are quoted.</Small>
       </InputPlaceholder>
@@ -156,7 +156,7 @@ const PrettierOptionsFormView = ({
         <DropDown
           items={TRAILING_COMMAS}
           selectedItem={TRAILING_COMMAS.find(({ value }) => value === trailingComma)}
-          onChange={({ value }) => handleChange('trailingComma')(value)}
+          onChange={({ value }) => setFieldValue('trailingComma', value)}
         />
         <Small>
           Print trailing commas wherever possible when multi-line. (A single-line array, for
@@ -167,12 +167,12 @@ const PrettierOptionsFormView = ({
       <CheckBox
         label="Print spaces between brackets in object literals"
         selected={bracketSpacing}
-        onPress={() => handleChange('bracketSpacing')(!bracketSpacing)}
+        onPress={() => setFieldValue('bracketSpacing', !bracketSpacing)}
       />
       <CheckBox
         label="Move closing bracket to next line"
         selected={jsxBracketSameLine}
-        onPress={() => handleChange('jsxBracketSameLine')(!jsxBracketSameLine)}
+        onPress={() => setFieldValue('jsxBracketSameLine', !jsxBracketSameLine)}
       />
       <Small style={{ marginBottom: 10 }}>
         Put the &gt; of a multi-line JSX element at the end of the last line instead of being alone
@@ -183,7 +183,7 @@ const PrettierOptionsFormView = ({
         <DropDown
           items={ARROW_FN_PARENTHESES}
           selectedItem={ARROW_FN_PARENTHESES.find(({ value }) => value === arrowParens)}
-          onChange={({ value }) => handleChange('arrowParens')(value)}
+          onChange={({ value }) => setFieldValue('arrowParens', value)}
         />
       </InputPlaceholder>
       <Small style={{ marginBottom: 10 }}>
@@ -194,7 +194,7 @@ const PrettierOptionsFormView = ({
         <DropDown
           items={PROSE_WRAP}
           selectedItem={PROSE_WRAP.find(({ value }) => value === proseWrap)}
-          onChange={({ value }) => handleChange('proseWrap')(value)}
+          onChange={({ value }) => setFieldValue('proseWrap', value)}
         />
       </InputPlaceholder>
 
@@ -213,7 +213,7 @@ const PrettierOptionsFormView = ({
 PrettierOptionsFormView.propTypes = {
   values: PropTypes.shape({}).isRequired,
   errors: PropTypes.shape({}).isRequired,
-  handleChange: PropTypes.func.isRequired,
+  setFieldValue: PropTypes.func.isRequired,
   handleSubmit: PropTypes.func.isRequired,
   handleBlur: PropTypes.func,
   onCancel: PropTypes.func,
@@ -283,7 +283,7 @@ const prettifyEditorCode = async ({ editorApi }) => {
   const prettier = await requireModule('prettier');
   const currentValue = await editorApi.getValue();
   let prettified;
-  
+
   try {
     prettified = prettier.format(currentValue, {
       ...options,
